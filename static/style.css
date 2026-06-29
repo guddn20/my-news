@@ -483,6 +483,169 @@ tr:last-child td { border-bottom: none; }
 .md-body blockquote { border-left: 3px solid var(--primary); padding-left: .75rem; color: var(--text-muted); margin: .5rem 0; }
 .md-body hr { border: none; border-top: 1px solid var(--border); margin: .75rem 0; }
 
+/* ── 위키 탭 ── */
+.wiki-tabs {
+  display: flex;
+  gap: .5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: .75rem;
+}
+.wiki-tab {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  padding: .5rem 1.1rem;
+  border-radius: 8px;
+  font-size: .9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .15s;
+}
+.wiki-tab:hover        { background: var(--surface2); color: var(--text); }
+.wiki-tab--active      { background: var(--primary); color: #fff; }
+
+/* ── 아카이브 필터 바 ── */
+.archive-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+.status-filter-group { display: flex; gap: .3rem; }
+.status-filter {
+  background: var(--surface2);
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  padding: .35rem .75rem;
+  border-radius: 9999px;
+  font-size: .8rem;
+  cursor: pointer;
+  transition: all .15s;
+}
+.status-filter:hover        { color: var(--text); border-color: var(--border); }
+.status-filter--active      { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* ── 기사 카드 ── */
+.article-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  margin-bottom: .85rem;
+  transition: border-color .15s;
+}
+.article-card:hover { border-color: #475569; }
+
+.article-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: .55rem;
+}
+.article-card-title {
+  display: block;
+  color: var(--text);
+  text-decoration: none;
+  font-size: .92rem;
+  font-weight: 500;
+  line-height: 1.5;
+  margin-bottom: .75rem;
+}
+.article-card-title:hover { color: var(--primary); text-decoration: underline; }
+
+/* 상태 버튼 */
+.status-btn-group { display: flex; gap: .4rem; margin-bottom: .85rem; flex-wrap: wrap; }
+.status-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: .25rem .75rem;
+  border-radius: 9999px;
+  font-size: .78rem;
+  cursor: pointer;
+  transition: all .15s;
+}
+.status-btn:hover     { border-color: #475569; color: var(--text); }
+.status-btn--active   { font-weight: 600; }
+
+/* 메모 영역 */
+.note-wrap   { position: relative; }
+.note-label  { font-size: .72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .3rem; }
+.note-input  {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid transparent;
+  color: var(--text);
+  padding: .55rem .75rem;
+  border-radius: 8px;
+  font-size: .85rem;
+  line-height: 1.6;
+  resize: vertical;
+  font-family: inherit;
+  transition: border-color .15s;
+}
+.note-input:focus         { border-color: var(--primary); outline: none; }
+.note-input::placeholder  { color: #475569; }
+.note-saved-indicator {
+  position: absolute;
+  right: .6rem; bottom: .45rem;
+  font-size: .72rem;
+  color: var(--success);
+  pointer-events: none;
+}
+
+/* 아이콘 버튼 */
+.icon-btn {
+  background: none; border: none;
+  color: var(--text-muted);
+  cursor: pointer; font-size: .9rem;
+  padding: .2rem .35rem; border-radius: 6px;
+  transition: all .15s; flex-shrink: 0;
+}
+.icon-btn:hover { background: var(--surface2); color: var(--error); }
+
+/* 빈 상태 */
+.wiki-empty { text-align: center; padding: 3.5rem 1rem; color: var(--text-muted); }
+
+/* ── 히트맵 ── */
+:root {
+  --hm-0: #1e293b;
+  --hm-1: #3730a3;
+  --hm-2: #4f46e5;
+  --hm-3: #818cf8;
+  --hm-4: #c7d2fe;
+}
+
+#heatmap-wrap   { overflow-x: auto; padding-bottom: .5rem; }
+.heatmap        { display: flex; gap: 3px; min-width: fit-content; }
+.heatmap-col    { display: flex; flex-direction: column; gap: 3px; }
+.heatmap-cell   {
+  width: 13px; height: 13px;
+  border-radius: 2px;
+  border: 1px solid rgba(255,255,255,0.06);
+  cursor: default;
+  transition: transform .1s;
+}
+.heatmap-cell:hover { transform: scale(1.4); border-color: rgba(255,255,255,0.3); }
+
+.heatmap-legend {
+  display: flex; align-items: center; gap: 4px;
+  margin-top: .75rem; justify-content: flex-end;
+}
+
+.heatmap-tooltip {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: .3rem .6rem;
+  border-radius: 6px;
+  font-size: .78rem;
+  pointer-events: none;
+  position: absolute;
+}
+
 /* ── 모바일 ── */
 @media (max-width: 768px) {
   .grid-3 { grid-template-columns: 1fr; }

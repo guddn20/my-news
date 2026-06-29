@@ -9,8 +9,8 @@ import anthropic
 _LENGTH_TOKENS = {"short": 256, "medium": 512, "detailed": 900}
 _LENGTH_HINT = {
     "short":    "1~2줄로 핵심만 요약하세요.",
-    "medium":   "2~3줄로 요약하고, 중요 기사 1~3개를 마크다운 링크로 포함하세요.",
-    "detailed": "3~5줄로 상세히 요약하고, 주요 기사 3~5개를 마크다운 링크로 포함하세요. 트렌드나 맥락도 간략히 언급하세요.",
+    "medium":   "2~3줄로 요약하세요. 주요 흐름과 핵심 내용 위주로 작성하세요.",
+    "detailed": "3~5줄로 상세히 요약하세요. 트렌드, 맥락, 주요 이슈를 포함하세요.",
 }
 
 
@@ -20,30 +20,23 @@ def _is_mock() -> bool:
 
 
 def _mock_summary(theme_name: str, articles: list[dict]) -> str:
-    lines = [
-        f"**요약**: [{theme_name}] 관련 기사 {len(articles)}건이 수집되었습니다. "
-        "(⚠️ Mock 모드 — ANTHROPIC_API_KEY 설정 후 실제 요약이 생성됩니다.)",
-        "",
-        "**주요 기사**:",
-    ]
-    for a in articles[:3]:
-        lines.append(f"- [{a['title']}]({a['link']})")
-    return "\n".join(lines)
+    titles = "、".join(a["title"][:20] for a in articles[:3])
+    return (
+        f"**[Mock 모드]** [{theme_name}] 관련 기사 {len(articles)}건 수집 완료. "
+        f"주요 기사: {titles} 등. "
+        "ANTHROPIC_API_KEY를 설정하면 실제 AI 요약이 생성됩니다."
+    )
 
 
 def _build_prompt(theme_name: str, articles: list[dict], length: str) -> str:
     hint = _LENGTH_HINT.get(length, _LENGTH_HINT["medium"])
     lines = [f"테마: {theme_name}", ""]
     for i, a in enumerate(articles[:10], 1):
-        lines.append(f"{i}. [{a['title']}]({a['link']}) {a['summary'][:200]}")
+        lines.append(f"{i}. {a['title']} — {a['summary'][:200]}")
     lines += [
         "",
         f"위 기사들을 한국어로 요약하세요. {hint}",
-        "출력 형식:",
-        "**요약**: (요약문)",
-        "",
-        "**주요 기사**:",
-        "- [기사 제목](링크)",
+        "링크나 기사 제목 나열은 포함하지 마세요. 순수 요약문만 작성하세요.",
     ]
     return "\n".join(lines)
 

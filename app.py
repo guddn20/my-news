@@ -168,14 +168,7 @@ templates = Jinja2Templates(directory="templates")
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
-    cfg         = load_config()
-    scores      = await tracker.get_interest_scores()
-    theme_names = {t["id"]: t["name"] for t in cfg["themes"]}
-    chart_data  = [
-        {"label": theme_names[tid], "value": cnt}
-        for tid, cnt in scores.items()
-        if tid in theme_names
-    ]
+    cfg       = load_config()
     today_run = next(
         (l for l in run_logs if l["executed_at"].startswith(date.today().strftime("%Y-%m-%d"))),
         None,
@@ -185,7 +178,6 @@ async def dashboard(request: Request):
         "logs":          run_logs[:7],
         "next_run":      scheduler.get_next_run(),
         "schedule_time": cfg.get("schedule_time", "07:00"),
-        "chart_data":    chart_data,
         "today_run":     today_run,
     })
 
@@ -291,7 +283,53 @@ async def track_click(request: Request):
                 break
 
     await wiki.add_to_wiki(vault, theme_name, article)
+
+    # 아카이브에 저장
+    await tracker.save_article(
+        url, title, theme_id,
+        source=article.get("source", ""),
+        published=article.get("published", ""),
+        summary=article.get("summary", ""),
+    )
     return JSONResponse({"ok": True})
+
+
+# ── 위키 아카이브 API ──────────────────────────────────────────
+
+@app.get("/api/wiki/articles")
+async def get_wiki_articles(theme: str = "", status: str = "", q: str = ""):
+    return await tracker.get_saved_articles(theme_id=theme, status=status, search=q)
+
+
+@app.post("/api/wiki/articles/status")
+async def update_article_status(request: Request):
+    body = await request.json()
+    await tracker.update_article_status(body["url"], body["status"])
+    return JSONResponse({"ok": True})
+
+
+@app.post("/api/wiki/articles/note")
+async def update_article_note(request: Request):
+    body = await request.json()
+    await tracker.update_article_note(body["url"], body["note"])
+    return JSONResponse({"ok": True})
+
+
+@app.delete("/api/wiki/articles")
+async def delete_article(request: Request):
+    body = await request.json()
+    await tracker.delete_saved_article(body["url"])
+    return JSONResponse({"ok": True})
+
+
+@app.get("/api/wiki/heatmap")
+async def get_heatmap():
+    return await tracker.get_click_heatmap(365)
+
+
+@app.get("/api/wiki/trends")
+async def get_trends():
+    return await tracker.get_theme_trends(30)
 
 
 @app.post("/api/dislike-article")

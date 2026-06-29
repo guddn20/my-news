@@ -1,6 +1,6 @@
 """클릭 추적 + 관심도 점수 (FR-08)"""
 import aiosqlite
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from pathlib import Path
 
 DB_PATH = Path(__file__).parent.parent / "data" / "tracker.db"
@@ -26,8 +26,24 @@ async def init_db():
                 disliked_at TEXT NOT NULL
             )
         """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS saved_articles (
+                id        INTEGER PRIMARY KEY AUTOINCREMENT,
+                url       TEXT NOT NULL UNIQUE,
+                title     TEXT NOT NULL,
+                theme_id  TEXT NOT NULL,
+                source    TEXT DEFAULT '',
+                published TEXT DEFAULT '',
+                summary   TEXT DEFAULT '',
+                note      TEXT DEFAULT '',
+                status    TEXT DEFAULT 'unread',
+                saved_at  TEXT NOT NULL
+            )
+        """)
         await db.commit()
 
+
+# ── 클릭 ──────────────────────────────────────────────────────
 
 async def record_click(title: str, theme_id: str, url: str):
     async with aiosqlite.connect(DB_PATH) as db:
@@ -37,6 +53,27 @@ async def record_click(title: str, theme_id: str, url: str):
         )
         await db.commit()
 
+
+async def get_interest_scores() -> dict[str, int]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute(
+            "SELECT theme_id, COUNT(*) as cnt FROM clicks GROUP BY theme_id ORDER BY cnt DESC"
+        )
+        rows = await cursor.fetchall()
+    return {row[0]: row[1] for row in rows}
+
+
+async def get_recent_clicks(limit: int = 20) -> list[dict]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute(
+            "SELECT * FROM clicks ORDER BY clicked_at DESC LIMIT ?", (limit,)
+        )
+        rows = await cursor.fetchall()
+    return [dict(r) for r in rows]
+
+
+# ── 관심 없음 ─────────────────────────────────────────────────
 
 async def record_dislike(url: str, title: str):
     async with aiosqlite.connect(DB_PATH) as db:
@@ -60,21 +97,89 @@ async def get_disliked_urls() -> set[str]:
     return {r[0] for r in rows}
 
 
-async def get_interest_scores() -> dict[str, int]:
-    """테마별 누적 클릭 수 반환 {theme_id: count}"""
+# ── 저장 기사 아카이브 ────────────────────────────────────────
+
+async def save_article(
+    url: str, title: str, theme_id: str,
+    source: str = '', published: str = '', summary: str = '',
+):
+    """기사를 아카이브에 저장. 이미 있으면 무시."""
     async with aiosqlite.connect(DB_PATH) as db:
-        cursor = await db.execute(
-            "SELECT theme_id, COUNT(*) as cnt FROM clicks GROUP BY theme_id ORDER BY cnt DESC"
+        await db.execute(
+            """INSERT OR IGNORE INTO saved_articles
+               (url, title, theme_id, source, published, summary, saved_at)
+               VALUES (?,?,?,?,?,?,?)""",
+            (url, title, theme_id, source, published, summary[:500], datetime.now().isoformat()),
         )
-        rows = await cursor.fetchall()
-    return {row[0]: row[1] for row in rows}
+        await db.commit()
 
 
-async def get_recent_clicks(limit: int = 20) -> list[dict]:
+async def update_article_status(url: str, status: str):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("UPDATE saved_articles SET status=? WHERE url=?", (status, url))
+        await db.commit()
+
+
+async def update_article_note(url: str, note: str):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("UPDATE saved_articles SET note=? WHERE url=?", (note, url))
+        await db.commit()
+
+
+async def get_saved_articles(
+    theme_id: str = '', status: str = '', search: str = ''
+) -> list[dict]:
+    conditions: list[str] = []
+    params: list = []
+    if theme_id:
+        conditions.append("theme_id = ?");  params.append(theme_id)
+    if status:
+        conditions.append("status = ?");    params.append(status)
+    if search:
+        conditions.append("(title LIKE ? OR note LIKE ? OR source LIKE ?)")
+        params.extend([f'%{search}%', f'%{search}%', f'%{search}%'])
+    where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         cursor = await db.execute(
-            "SELECT * FROM clicks ORDER BY clicked_at DESC LIMIT ?", (limit,)
+            f"SELECT * FROM saved_articles {where} ORDER BY saved_at DESC",
+            params,
         )
         rows = await cursor.fetchall()
     return [dict(r) for r in rows]
+
+
+async def delete_saved_article(url: str):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("DELETE FROM saved_articles WHERE url=?", (url,))
+        await db.commit()
+
+
+# ── 분석용 집계 ───────────────────────────────────────────────
+
+async def get_click_heatmap(days: int = 365) -> list[dict]:
+    """날짜별 클릭 수 [{date: 'YYYY-MM-DD', count: n}]"""
+    start = (date.today() - timedelta(days=days)).isoformat()
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute(
+            """SELECT substr(clicked_at,1,10) as d, COUNT(*) as cnt
+               FROM clicks WHERE clicked_at >= ?
+               GROUP BY d ORDER BY d""",
+            (start,),
+        )
+        rows = await cursor.fetchall()
+    return [{"date": r[0], "count": r[1]} for r in rows]
+
+
+async def get_theme_trends(days: int = 30) -> list[dict]:
+    """테마별 날짜별 클릭 수 [{date, theme_id, count}]"""
+    start = (date.today() - timedelta(days=days)).isoformat()
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute(
+            """SELECT substr(clicked_at,1,10) as d, theme_id, COUNT(*) as cnt
+               FROM clicks WHERE clicked_at >= ?
+               GROUP BY d, theme_id ORDER BY d""",
+            (start,),
+        )
+        rows = await cursor.fetchall()
+    return [{"date": r[0], "theme_id": r[1], "count": r[2]} for r in rows]

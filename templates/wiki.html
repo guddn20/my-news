@@ -3,76 +3,360 @@
 
 {% block content %}
 <h1>개인 위키</h1>
-<p class="subtitle">클릭한 기사가 자동 누적되는 테마별 지식 베이스</p>
+<p class="subtitle">클릭한 기사가 자동 저장되는 나만의 뉴스 아카이브</p>
 
-{% if not wiki_list %}
-<div class="card" style="text-align:center;padding:3rem;margin-bottom:1.5rem">
-  <div style="font-size:3rem;margin-bottom:1rem">🧠</div>
-  <p style="color:var(--text-muted)">아직 위키가 없습니다.</p>
-  <p style="color:var(--text-muted);font-size:.875rem;margin-top:.5rem">
-    브리핑 화면에서 기사를 클릭하면 테마별 위키 파일이 자동 생성됩니다.
-  </p>
-  <a href="/briefing" class="btn btn-primary" style="margin-top:1.5rem">브리핑 보러 가기</a>
-</div>
-{% else %}
-
-<div class="grid-2" style="margin-bottom:1.5rem">
-  {% for w in wiki_list %}
-  <div class="card" style="cursor:pointer" onclick="showWiki({{ loop.index0 }})">
-    <div class="section-title">
-      🧠 {{ w.theme }}
-      <span style="color:var(--text-muted);font-size:.8rem;font-weight:400">{{ w.article_count }}개 기사</span>
-    </div>
-    <p style="color:var(--text-muted);font-size:.8rem">{{ w.path }}</p>
-  </div>
-  {% endfor %}
+<!-- 탭 -->
+<div class="wiki-tabs">
+  <button class="wiki-tab wiki-tab--active" onclick="switchWikiTab('archive', this)">📚 아카이브</button>
+  <button class="wiki-tab" onclick="switchWikiTab('analysis', this)">📊 관심사 분석</button>
 </div>
 
-<!-- 위키 내용 뷰어 -->
-<div id="wiki-viewer" class="card" style="display:none">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-    <div class="section-title" id="wiki-title" style="margin:0"></div>
-    <button class="btn btn-secondary btn-sm" onclick="document.getElementById('wiki-viewer').style.display='none'">닫기</button>
-  </div>
-  <div id="wiki-content" class="md-body" style="font-size:.85rem;line-height:1.7;color:var(--text)"></div>
-</div>
-{% endif %}
+<!-- ══ 아카이브 탭 ══════════════════════════════════════════ -->
+<div id="wtab-archive">
 
-<!-- 최근 클릭 기록 -->
-{% if recent_clicks %}
-<div class="card" style="margin-top:1.5rem">
-  <div class="section-title">🕐 최근 클릭 기록</div>
-  <table>
-    <thead>
-      <tr><th>기사 제목</th><th>테마</th><th>클릭 시각</th></tr>
-    </thead>
-    <tbody>
-      {% for click in recent_clicks %}
-      <tr>
-        <td><a href="{{ click.url }}" target="_blank" style="color:var(--primary);text-decoration:none;font-size:.85rem">{{ click.title[:50] }}{% if click.title|length > 50 %}…{% endif %}</a></td>
-        <td><span class="badge" style="background:var(--surface2);color:var(--text-muted)">{{ click.theme_id }}</span></td>
-        <td style="color:var(--text-muted);font-size:.8rem">{{ click.clicked_at[:16] }}</td>
-      </tr>
+  <!-- 필터 바 -->
+  <div class="archive-filter-bar">
+    <input type="text" id="search-input" placeholder="🔍 제목, 메모, 출처 검색…" oninput="debounceLoad()" style="flex:1;min-width:180px">
+    <select id="theme-filter" onchange="loadArticles()" style="max-width:160px">
+      <option value="">전체 테마</option>
+      {% for t in themes %}
+      <option value="{{ t.id }}">{{ t.name }}</option>
       {% endfor %}
-    </tbody>
-  </table>
+    </select>
+    <div class="status-filter-group">
+      <button class="status-filter status-filter--active" data-status="" onclick="setStatusFilter('', this)">전체</button>
+      <button class="status-filter" data-status="unread" onclick="setStatusFilter('unread', this)">안읽음</button>
+      <button class="status-filter" data-status="read" onclick="setStatusFilter('read', this)">읽음</button>
+      <button class="status-filter" data-status="later" onclick="setStatusFilter('later', this)">나중에</button>
+    </div>
+  </div>
+
+  <!-- 기사 카드 목록 -->
+  <div id="article-list">
+    <div class="wiki-empty">
+      <div style="font-size:3rem;margin-bottom:1rem">📭</div>
+      <p>저장된 기사가 없습니다.</p>
+      <p style="font-size:.85rem;margin-top:.5rem">브리핑 화면에서 기사를 클릭하면 자동으로 저장됩니다.</p>
+      <a href="/briefing" class="btn btn-primary" style="margin-top:1.25rem">브리핑 보러 가기</a>
+    </div>
+  </div>
+
+  <div id="archive-count" style="text-align:center;color:var(--text-muted);font-size:.82rem;margin-top:1rem;display:none"></div>
 </div>
-{% endif %}
+
+<!-- ══ 분석 탭 ══════════════════════════════════════════════ -->
+<div id="wtab-analysis" style="display:none">
+
+  <!-- 히트맵 -->
+  <div class="card" style="margin-bottom:1.5rem">
+    <div class="section-title">🗓️ 활동 히트맵 <span style="font-size:.78rem;font-weight:400;color:var(--text-muted)">최근 1년</span></div>
+    <div id="heatmap-wrap">
+      <div id="heatmap" class="heatmap"></div>
+      <div class="heatmap-legend">
+        <span style="color:var(--text-muted);font-size:.75rem">적음</span>
+        <div class="heatmap-cell" style="background:var(--hm-0)"></div>
+        <div class="heatmap-cell" style="background:var(--hm-1)"></div>
+        <div class="heatmap-cell" style="background:var(--hm-2)"></div>
+        <div class="heatmap-cell" style="background:var(--hm-3)"></div>
+        <div class="heatmap-cell" style="background:var(--hm-4)"></div>
+        <span style="color:var(--text-muted);font-size:.75rem">많음</span>
+      </div>
+    </div>
+    <div id="heatmap-tooltip" class="heatmap-tooltip" style="display:none"></div>
+    <p id="heatmap-total" style="color:var(--text-muted);font-size:.82rem;margin-top:.75rem;text-align:center"></p>
+  </div>
+
+  <!-- 테마 트렌드 -->
+  <div class="card" style="margin-bottom:1.5rem">
+    <div class="section-title">📈 테마별 트렌드 <span style="font-size:.78rem;font-weight:400;color:var(--text-muted)">최근 30일</span></div>
+    <div id="trend-empty" style="display:none;text-align:center;padding:2rem;color:var(--text-muted);font-size:.875rem">
+      데이터가 부족합니다. 브리핑에서 기사를 클릭해보세요.
+    </div>
+    <canvas id="trendChart" height="200" style="display:none"></canvas>
+  </div>
+
+  <!-- 최근 클릭 -->
+  <div class="card">
+    <div class="section-title">🕐 최근 클릭 기록</div>
+    {% if recent_clicks %}
+    <table>
+      <thead>
+        <tr><th>기사 제목</th><th>테마</th><th>클릭 시각</th></tr>
+      </thead>
+      <tbody>
+        {% for click in recent_clicks %}
+        <tr>
+          <td>
+            <a href="{{ click.url }}" target="_blank" style="color:var(--primary);text-decoration:none;font-size:.85rem">
+              {{ click.title[:50] }}{% if click.title|length > 50 %}…{% endif %}
+            </a>
+          </td>
+          <td><span class="badge" style="background:var(--surface2);color:var(--text-muted)">{{ click.theme_id }}</span></td>
+          <td style="color:var(--text-muted);font-size:.8rem">{{ click.clicked_at[:16] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:var(--text-muted);text-align:center;padding:2rem">클릭 기록 없음</p>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script>
 document.querySelector('.nav-links a[href="/wiki"]')?.classList.add('active');
 
-const wikis = {{ wiki_list | tojson if wiki_list else '[]' }};
+const THEME_COLORS = ['#6366f1','#22c55e','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899'];
+const STATUS_LABEL = { unread: '안읽음', read: '읽음', later: '나중에' };
+const STATUS_COLOR = { unread: '#94a3b8', read: '#22c55e', later: '#f59e0b' };
 
-function showWiki(i) {
-  const w = wikis[i];
-  document.getElementById('wiki-title').textContent = '🧠 ' + w.theme;
-  document.getElementById('wiki-content').innerHTML = marked.parse(w.content || '');
-  document.getElementById('wiki-viewer').style.display = 'block';
-  document.getElementById('wiki-viewer').scrollIntoView({ behavior: 'smooth' });
+let _statusFilter = '';
+let _debounceTimer = null;
+
+// ── 탭 전환 ─────────────────────────────────────────────────
+function switchWikiTab(tab, btn) {
+  document.querySelectorAll('[id^="wtab-"]').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.wiki-tab').forEach(el => el.classList.remove('wiki-tab--active'));
+  document.getElementById(`wtab-${tab}`).style.display = 'block';
+  btn.classList.add('wiki-tab--active');
+  if (tab === 'analysis') loadAnalysis();
 }
+
+// ── 아카이브 ────────────────────────────────────────────────
+function setStatusFilter(status, btn) {
+  _statusFilter = status;
+  document.querySelectorAll('.status-filter').forEach(el => el.classList.remove('status-filter--active'));
+  btn.classList.add('status-filter--active');
+  loadArticles();
+}
+
+function debounceLoad() {
+  clearTimeout(_debounceTimer);
+  _debounceTimer = setTimeout(loadArticles, 350);
+}
+
+async function loadArticles() {
+  const q      = document.getElementById('search-input').value.trim();
+  const theme  = document.getElementById('theme-filter').value;
+  const params = new URLSearchParams({ q, theme, status: _statusFilter });
+  const res    = await fetch(`/api/wiki/articles?${params}`);
+  const list   = await res.json();
+  renderArticles(list);
+}
+
+function renderArticles(articles) {
+  const el      = document.getElementById('article-list');
+  const countEl = document.getElementById('archive-count');
+
+  if (!articles.length) {
+    el.innerHTML = `
+      <div class="wiki-empty">
+        <div style="font-size:2.5rem;margin-bottom:.75rem">🔍</div>
+        <p>조건에 맞는 기사가 없습니다.</p>
+      </div>`;
+    countEl.style.display = 'none';
+    return;
+  }
+
+  el.innerHTML = articles.map(a => `
+    <div class="article-card" id="ac-${btoa(a.url).replace(/[^a-z0-9]/gi,'').slice(0,16)}">
+      <div class="article-card-header">
+        <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+          <span class="badge" style="background:var(--primary);color:#fff;font-size:.72rem">${escHtml(a.theme_id)}</span>
+          ${a.source ? `<span style="color:var(--text-muted);font-size:.78rem">${escHtml(a.source)}</span>` : ''}
+          ${a.published ? `<span style="color:var(--text-muted);font-size:.75rem">🕐 ${escHtml(a.published)}</span>` : ''}
+        </div>
+        <button class="icon-btn" onclick="deleteArticle('${escHtml(a.url)}')" title="삭제">🗑️</button>
+      </div>
+
+      <a href="${escHtml(a.url)}" target="_blank" rel="noopener" class="article-card-title">
+        ↗ ${escHtml(a.title)}
+      </a>
+
+      <!-- 상태 버튼 -->
+      <div class="status-btn-group">
+        ${['unread','read','later'].map(s => `
+          <button class="status-btn ${a.status===s?'status-btn--active':''}"
+                  style="${a.status===s?`border-color:${STATUS_COLOR[s]};color:${STATUS_COLOR[s]}`:''}"
+                  onclick="setArticleStatus('${escHtml(a.url)}', '${s}', this)">
+            ${s==='read'?'✓ ':''}${STATUS_LABEL[s]}
+          </button>
+        `).join('')}
+      </div>
+
+      <!-- 메모 -->
+      <div class="note-wrap">
+        <div class="note-label">📝 메모</div>
+        <textarea class="note-input" rows="2"
+                  placeholder="이 기사를 저장한 이유, 느낀 점, 키워드…"
+                  onInput="scheduleNoteSave(this, '${escHtml(a.url)}')"
+        >${escHtml(a.note || '')}</textarea>
+        <div class="note-saved-indicator" style="display:none">저장됨 ✓</div>
+      </div>
+    </div>
+  `).join('');
+
+  countEl.textContent = `총 ${articles.length}개 기사`;
+  countEl.style.display = 'block';
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// 상태 변경
+async function setArticleStatus(url, status, btn) {
+  await fetch('/api/wiki/articles/status', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url, status }),
+  });
+  const group = btn.closest('.status-btn-group');
+  group.querySelectorAll('.status-btn').forEach(b => {
+    const s = b.textContent.includes('읽음') && !b.textContent.includes('안') ? 'read'
+            : b.textContent.includes('안') ? 'unread' : 'later';
+    b.classList.remove('status-btn--active');
+    b.style.borderColor = ''; b.style.color = '';
+  });
+  btn.classList.add('status-btn--active');
+  btn.style.borderColor = STATUS_COLOR[status];
+  btn.style.color       = STATUS_COLOR[status];
+}
+
+// 메모 자동 저장
+const _noteTimers = {};
+function scheduleNoteSave(textarea, url) {
+  const indicator = textarea.nextElementSibling;
+  clearTimeout(_noteTimers[url]);
+  _noteTimers[url] = setTimeout(async () => {
+    await fetch('/api/wiki/articles/note', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, note: textarea.value }),
+    });
+    if (indicator) {
+      indicator.style.display = 'block';
+      setTimeout(() => { indicator.style.display = 'none'; }, 1500);
+    }
+  }, 800);
+}
+
+// 기사 삭제
+async function deleteArticle(url) {
+  if (!confirm('아카이브에서 삭제할까요?')) return;
+  await fetch('/api/wiki/articles', {
+    method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url }),
+  });
+  loadArticles();
+}
+
+// ── 분석 ────────────────────────────────────────────────────
+let _trendChart = null;
+
+async function loadAnalysis() {
+  const [heatmapData, trendData] = await Promise.all([
+    fetch('/api/wiki/heatmap').then(r => r.json()),
+    fetch('/api/wiki/trends').then(r => r.json()),
+  ]);
+  renderHeatmap(heatmapData);
+  renderTrend(trendData);
+}
+
+function renderHeatmap(data) {
+  const countByDate = {};
+  let total = 0;
+  data.forEach(d => { countByDate[d.date] = d.count; total += d.count; });
+
+  const today   = new Date();
+  const start   = new Date(today);
+  start.setDate(start.getDate() - 364);
+  // 첫 번째 일요일로 맞추기
+  start.setDate(start.getDate() - start.getDay());
+
+  const HM_COLORS = ['var(--hm-0)','var(--hm-1)','var(--hm-2)','var(--hm-3)','var(--hm-4)'];
+  const level = n => n === 0 ? 0 : n <= 1 ? 1 : n <= 3 ? 2 : n <= 5 ? 3 : 4;
+
+  const DAYS = 7, WEEKS = 53;
+  // 열(주) 기준으로 순회
+  const wrap = document.getElementById('heatmap');
+  wrap.innerHTML = '';
+
+  for (let w = 0; w < WEEKS; w++) {
+    const col = document.createElement('div');
+    col.className = 'heatmap-col';
+    for (let d = 0; d < DAYS; d++) {
+      const dt = new Date(start);
+      dt.setDate(dt.getDate() + w * 7 + d);
+      if (dt > today) { col.appendChild(document.createElement('div')); continue; }
+      const ds  = dt.toISOString().slice(0, 10);
+      const cnt = countByDate[ds] || 0;
+      const cell = document.createElement('div');
+      cell.className = 'heatmap-cell';
+      cell.style.background = HM_COLORS[level(cnt)];
+      cell.title = `${ds}: ${cnt}클릭`;
+      cell.addEventListener('mouseenter', e => {
+        const tip = document.getElementById('heatmap-tooltip');
+        tip.textContent = `${ds} · ${cnt}클릭`;
+        tip.style.display = 'block';
+      });
+      cell.addEventListener('mouseleave', () => {
+        document.getElementById('heatmap-tooltip').style.display = 'none';
+      });
+      col.appendChild(cell);
+    }
+    wrap.appendChild(col);
+  }
+
+  const totalEl = document.getElementById('heatmap-total');
+  totalEl.textContent = total ? `최근 1년간 총 ${total}개 기사를 읽었습니다` : '아직 클릭 기록이 없습니다';
+}
+
+function renderTrend(data) {
+  const canvas   = document.getElementById('trendChart');
+  const emptyEl  = document.getElementById('trend-empty');
+  if (!data.length) { emptyEl.style.display='block'; canvas.style.display='none'; return; }
+
+  emptyEl.style.display = 'none';
+  canvas.style.display  = 'block';
+
+  // 날짜 목록 & 테마 목록 추출
+  const dates  = [...new Set(data.map(d => d.date))].sort();
+  const themes = [...new Set(data.map(d => d.theme_id))];
+
+  // theme+date → count 맵
+  const map = {};
+  data.forEach(d => { map[`${d.theme_id}|${d.date}`] = d.count; });
+
+  const datasets = themes.map((tid, i) => ({
+    label: tid,
+    data:  dates.map(dt => map[`${tid}|${dt}`] || 0),
+    borderColor:     THEME_COLORS[i % THEME_COLORS.length],
+    backgroundColor: THEME_COLORS[i % THEME_COLORS.length] + '22',
+    borderWidth: 2,
+    pointRadius: 3,
+    tension: 0.3,
+    fill: false,
+  }));
+
+  if (_trendChart) _trendChart.destroy();
+  _trendChart = new Chart(canvas, {
+    type: 'line',
+    data: { labels: dates, datasets },
+    options: {
+      plugins: {
+        legend: { labels: { color: '#94a3b8', boxWidth: 12, font: { size: 11 } } }
+      },
+      scales: {
+        x: { ticks: { color: '#94a3b8', maxTicksLimit: 10 }, grid: { color: '#334155' } },
+        y: { ticks: { color: '#94a3b8', stepSize: 1 }, grid: { color: '#334155' }, beginAtZero: true },
+      },
+    },
+  });
+}
+
+// ── 초기화 ───────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => { loadArticles(); });
 </script>
 {% endblock %}

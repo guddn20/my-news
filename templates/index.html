@@ -103,22 +103,8 @@
   <div id="run-result" style="margin-top:1rem;padding:1rem;border-radius:8px;display:none;font-size:.875rem;line-height:1.6"></div>
 </div>
 
-<div class="grid-2">
-  <!-- 관심도 차트 -->
-  <div class="card">
-    <div class="section-title">📊 테마별 관심도</div>
-    {% if chart_data %}
-    <canvas id="interestChart" height="200"></canvas>
-    {% else %}
-    <div style="text-align:center;padding:2.5rem 0">
-      <div style="font-size:2.5rem;margin-bottom:.75rem">📊</div>
-      <p style="color:var(--text-muted);font-size:.875rem">브리핑에서 기사를 클릭하면<br>관심도가 쌓입니다</p>
-    </div>
-    {% endif %}
-  </div>
-
-  <!-- 최근 실행 로그 -->
-  <div class="card">
+<!-- 최근 실행 로그 -->
+<div class="card" style="margin-bottom:1.5rem">
     <div class="section-title">📋 최근 실행 로그</div>
     {% if logs %}
     <div class="log-list">
@@ -146,37 +132,11 @@
     <p style="color:var(--text-muted);text-align:center;padding:2rem">실행 기록 없음</p>
     {% endif %}
   </div>
-</div>
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script>
 document.querySelector('.nav-links a[href="/"]')?.classList.add('active');
-
-{% if chart_data %}
-const ctx = document.getElementById('interestChart');
-new Chart(ctx, {
-  type: 'bar',
-  data: {
-    labels: {{ chart_data | map(attribute='label') | list | tojson }},
-    datasets: [{
-      data: {{ chart_data | map(attribute='value') | list | tojson }},
-      backgroundColor: '#6366f1aa',
-      borderColor: '#6366f1',
-      borderWidth: 2,
-      borderRadius: 6,
-    }]
-  },
-  options: {
-    plugins: { legend: { display: false } },
-    scales: {
-      x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
-      y: { ticks: { color: '#94a3b8', stepSize: 1 }, grid: { color: '#334155' }, beginAtZero: true }
-    }
-  }
-});
-{% endif %}
 
 // 진행 단계 → step ID 매핑
 const STEP_ORDER = ['collecting','summarizing','saving','emailing','done'];

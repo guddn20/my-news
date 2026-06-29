@@ -78,8 +78,9 @@
     }
   ],
   "newsletter": {
-    "enabled": false,
+    "enabled": true,
     "recipients": []
   },
-  "collect_days": 2
+  "collect_days": 2,
+  "summary_length": "detailed"
 }
