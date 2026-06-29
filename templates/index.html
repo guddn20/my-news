@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}대시보드 — My News{% endblock %}
+
+{% block content %}
+<h1>대시보드</h1>
+<p class="subtitle">AI 일일 뉴스 브리핑 현황</p>
+
+<div class="grid-3">
+  <div class="card">
+    <div class="stat-label">다음 자동 실행</div>
+    <div class="stat-value" style="font-size:1.35rem">{{ next_run or '—' }}</div>
+    <div class="stat-sub">매일 {{ schedule_time }} 예약</div>
+  </div>
+  <div class="card">
+    <div class="stat-label">마지막 실행</div>
+    {% if logs %}
+    <div class="stat-value" style="font-size:1.1rem">{{ logs[0].executed_at }}</div>
+    <div class="stat-sub">
+      <span class="badge badge-{{ 'success' if logs[0].status == 'success' else 'error' }}">
+        {{ '성공' if logs[0].status == 'success' else '실패' }}
+      </span>
+      {{ logs[0].total_articles }}개 기사
+      {% if logs[0].mail_sent %} · 메일 {{ logs[0].mail_sent }}건{% endif %}
+    </div>
+    {% else %}
+    <div class="stat-value" style="font-size:1.4rem">—</div>
+    <div class="stat-sub">아직 실행 기록 없음</div>
+    {% endif %}
+  </div>
+  <div class="card">
+    <div class="stat-label">상태</div>
+    <div class="stat-value" style="color:var(--success)">●</div>
+    <div class="stat-sub">서버 실행 중</div>
+  </div>
+</div>
+
+<!-- 수동 실행 -->
+<div class="card" style="margin-bottom:1.5rem">
+  <div class="section-title">▶ 수동 실행</div>
+  <p style="color:var(--text-muted);font-size:.875rem;margin-bottom:1rem">
+    RSS 수집 → Claude 요약 → Obsidian 저장 → 이메일 발송 순으로 실행됩니다.
+  </p>
+  <div style="display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap;margin-bottom:1rem">
+    <label style="font-size:.875rem;cursor:pointer;display:flex;align-items:center;gap:.4rem">
+      <input type="checkbox" id="overwrite-check" style="width:auto">
+      Obsidian 기존 브리핑 덮어쓰기
+    </label>
+  </div>
+  <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+    <button class="btn btn-primary" id="run-btn" onclick="runNow()">▶ 지금 실행</button>
+    <button class="btn btn-secondary" id="email-btn" onclick="sendEmailNow()">📧 이메일 즉시 발송</button>
+  </div>
+  <div id="run-result"></div>
+</div>
+
+<div class="grid-2">
+  <!-- 관심도 차트 -->
+  <div class="card">
+    <div class="section-title">📊 테마별 관심도</div>
+    {% if chart_data %}
+    <canvas id="interestChart" height="200"></canvas>
+    {% else %}
+    <p style="color:var(--text-muted);font-size:.875rem;text-align:center;padding:2rem 0">
+      브리핑에서 기사를 클릭하면 관심도가 쌓입니다.
+    </p>
+    {% endif %}
+  </div>
+
+  <!-- 최근 실행 로그 -->
+  <div class="card">
+    <div class="section-title">📋 최근 실행 로그</div>
+    {% if logs %}
+    <table>
+      <thead>
+        <tr><th>일시</th><th>기사</th><th>메일</th><th>상태</th></tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td style="font-size:.8rem">{{ log.executed_at }}</td>
+          <td>{{ log.total_articles }}</td>
+          <td>{{ log.mail_sent or 0 }}</td>
+          <td>
+            <span class="badge badge-{{ 'success' if log.status == 'success' else 'error' }}">
+              {{ '성공' if log.status == 'success' else '실패' }}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:var(--text-muted);text-align:center;padding:2rem">실행 기록 없음</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+document.querySelector('.nav-links a[href="/"]')?.classList.add('active');
+
+{% if chart_data %}
+const ctx = document.getElementById('interestChart');
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: {{ chart_data | map(attribute='label') | list | tojson }},
+    datasets: [{
+      data: {{ chart_data | map(attribute='value') | list | tojson }},
+      backgroundColor: '#6366f1aa',
+      borderColor: '#6366f1',
+      borderWidth: 2,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+      y: { ticks: { color: '#94a3b8', stepSize: 1 }, grid: { color: '#334155' }, beginAtZero: true }
+    }
+  }
+});
+{% endif %}
+</script>
+{% endblock %}

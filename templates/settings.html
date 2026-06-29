@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+{% block title %}설정 — My News{% endblock %}
+
+{% block content %}
+<h1>설정</h1>
+<p class="subtitle">브리핑 동작에 필요한 모든 설정을 관리합니다</p>
+
+<!-- 기본 설정 -->
+<div class="card" style="margin-bottom:1.5rem">
+  <div class="section-title">⚙️ 기본 설정</div>
+  <form id="general-form">
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">자동 실행 시간</label>
+        <input type="time" name="schedule_time" value="{{ config.schedule_time or '07:00' }}" style="max-width:160px">
+      </div>
+      <div class="form-group">
+        <label class="form-label">옵시디언 Vault 경로</label>
+        <div style="display:flex;gap:.5rem">
+          <input type="text" name="obsidian_vault_path" id="vault-path-input"
+                 value="{{ config.obsidian_vault_path or '' }}"
+                 placeholder="예: C:/Users/user/Documents/ObsidianVault">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="browseFolder()" style="white-space:nowrap">
+            📁 폴더 선택
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">뉴스 수집 기간</label>
+      <select name="collect_days" style="max-width:280px">
+        <option value="1" {% if config.collect_days == 1 or not config.collect_days %}selected{% endif %}>전날 기사만 (권장)</option>
+        <option value="2" {% if config.collect_days == 2 %}selected{% endif %}>당일 + 전날</option>
+      </select>
+      <p style="color:var(--text-muted);font-size:.78rem;margin-top:.35rem">
+        기간이 길수록 기사 수는 늘지만 오래된 뉴스가 섞일 수 있습니다.
+      </p>
+    </div>
+    <button type="submit" class="btn btn-primary">저장</button>
+  </form>
+</div>
+
+<!-- 테마 관리 -->
+<div class="card" style="margin-bottom:1.5rem">
+  <div class="section-title">🏷️ 테마 관리</div>
+  <div id="theme-list" style="margin-bottom:1rem"></div>
+  <div style="display:flex;gap:.75rem;align-items:center">
+    <input type="text" id="new-theme-name" placeholder="새 테마 이름" style="max-width:220px">
+    <button class="btn btn-secondary" onclick="addTheme()">+ 테마 추가</button>
+    <button class="btn btn-primary" onclick="saveThemes()">테마 저장</button>
+  </div>
+</div>
+
+<!-- 키워드 필터 -->
+<div class="card" style="margin-bottom:1.5rem">
+  <div class="section-title">🔍 테마별 키워드 필터</div>
+  <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:1rem">
+    키워드를 등록하면 해당 단어가 제목/요약에 포함된 기사만 수집합니다.<br>
+    비워두면 해당 피드의 모든 기사를 가져옵니다. (구글뉴스처럼 범용 피드에 특히 유용)
+  </p>
+  <div id="keyword-list"></div>
+  <button class="btn btn-primary" style="margin-top:.75rem" onclick="saveKeywords()">키워드 저장</button>
+</div>
+
+<!-- 이메일 뉴스레터 (Phase 2) -->
+<div class="card" style="margin-bottom:1.5rem">
+  <div class="section-title">📧 이메일 뉴스레터</div>
+
+  <div class="form-group" style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
+    <label style="font-size:.9rem;cursor:pointer">
+      <input type="checkbox" id="newsletter-enabled"
+        {% if config.newsletter and config.newsletter.enabled %}checked{% endif %}
+        style="width:auto;margin-right:.4rem">
+      브리핑 생성 후 이메일 자동 발송
+    </label>
+  </div>
+
+  <div class="section-title" style="font-size:.9rem;margin-bottom:.75rem">수신자 목록</div>
+  <div id="recipient-list" style="margin-bottom:1rem"></div>
+
+  <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem">
+    <input type="text" id="new-recipient-name" placeholder="이름" style="max-width:150px">
+    <input type="email" id="new-recipient-email" placeholder="이메일 주소" style="max-width:250px">
+    <button class="btn btn-secondary" onclick="addRecipient()">+ 추가</button>
+  </div>
+
+  <div style="background:var(--surface2);border-radius:8px;padding:1rem;font-size:.8rem;color:var(--text-muted);margin-bottom:1rem">
+    💡 SMTP 설정은 <code>.env</code> 파일에서 관리합니다.<br>
+    <code>SMTP_SERVER</code> / <code>SMTP_PORT</code> / <code>SMTP_USER</code> / <code>SMTP_PASSWORD</code><br><br>
+    <strong style="color:var(--warning)">Gmail 사용 시:</strong> 일반 비밀번호가 아닌 <strong>앱 비밀번호</strong>가 필요합니다.<br>
+    Google 계정 → 보안 → 2단계 인증 활성화 → 앱 비밀번호 생성 → <code>SMTP_PASSWORD</code>에 입력<br><br>
+    <strong style="color:var(--text)">.env 파일을 수정했다면 아래 버튼으로 서버 재시작 없이 반영할 수 있습니다.</strong>
+  </div>
+  <div id="reload-env-result" style="display:none;padding:.6rem 1rem;border-radius:8px;font-size:.85rem;margin-bottom:.75rem"></div>
+
+  <div id="mail-test-result" style="display:none;padding:.75rem 1rem;border-radius:8px;font-size:.85rem;margin-bottom:1rem"></div>
+
+  <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+    <button class="btn btn-primary" onclick="saveNewsletter()">뉴스레터 설정 저장</button>
+    <button class="btn btn-secondary" onclick="testSmtp()">📧 SMTP 연결 테스트</button>
+    <button class="btn btn-secondary" onclick="reloadEnv()">🔄 .env 리로드</button>
+  </div>
+</div>
+
+<!-- 피드 관리 모달 -->
+<div id="feed-modal" style="display:none;position:fixed;inset:0;background:#00000088;z-index:200;align-items:center;justify-content:center">
+  <div class="card" style="width:640px;max-height:86vh;overflow-y:auto">
+
+    <!-- 헤더 -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
+      <div class="section-title" id="modal-theme-name" style="margin:0"></div>
+      <button class="btn btn-secondary btn-sm" onclick="closeModal()">닫기</button>
+    </div>
+
+    <!-- 등록된 피드 목록 -->
+    <div id="feed-list" style="margin-bottom:1.25rem"></div>
+
+    <!-- 탭 -->
+    <div style="border-top:1px solid var(--border);padding-top:1rem">
+      <div style="display:flex;gap:.5rem;margin-bottom:1rem">
+        <button id="tab-library" class="btn btn-primary btn-sm" onclick="switchTab('library')">📚 큐레이션 추가</button>
+        <button id="tab-detect"  class="btn btn-secondary btn-sm" onclick="switchTab('detect')">🔍 URL 자동 감지</button>
+        <button id="tab-manual"  class="btn btn-secondary btn-sm" onclick="switchTab('manual')">✏️ 직접 입력</button>
+      </div>
+
+      <!-- 큐레이션 탭 -->
+      <div id="tab-content-library">
+        <div id="library-category" style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem"></div>
+        <div id="library-feeds" style="max-height:220px;overflow-y:auto"></div>
+      </div>
+
+      <!-- URL 자동 감지 탭 -->
+      <div id="tab-content-detect" style="display:none">
+        <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:.75rem">
+          뉴스 사이트 주소를 입력하면 RSS 피드를 자동으로 찾아드립니다.
+        </p>
+        <div style="display:flex;gap:.5rem;margin-bottom:.75rem">
+          <input type="url" id="detect-url" placeholder="https://example.com" style="flex:1">
+          <button class="btn btn-secondary btn-sm" onclick="detectRss()">🔍 감지</button>
+        </div>
+        <div id="detect-result" style="display:none;padding:.75rem;border-radius:8px;font-size:.875rem"></div>
+      </div>
+
+      <!-- 직접 입력 탭 -->
+      <div id="tab-content-manual" style="display:none">
+        <div class="grid-2" style="margin-bottom:.5rem">
+          <input type="text" id="new-feed-name" placeholder="피드 이름 (예: ZDNet)">
+          <input type="url" id="new-feed-url" placeholder="RSS URL">
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="addFeed()">+ 추가</button>
+      </div>
+    </div>
+
+    <div style="margin-top:1rem;padding-top:.75rem;border-top:1px solid var(--border)">
+      <button class="btn btn-primary btn-sm" onclick="saveFeedsAndClose()">저장 후 닫기</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelector('.nav-links a[href="/settings"]')?.classList.add('active');
+
+// ── 수신자 관리 ─────────────────────────────────────────────
+let recipients = {{ (config.newsletter.recipients if config.newsletter else []) | tojson }};
+
+function renderRecipients() {
+  const list = document.getElementById('recipient-list');
+  if (!list) return;
+  if (!recipients.length) {
+    list.innerHTML = '<p style="color:var(--text-muted);font-size:.875rem">수신자가 없습니다.</p>';
+    return;
+  }
+  list.innerHTML = recipients.map((r, i) => `
+    <div class="feed-item">
+      <span style="font-weight:500;flex:0 0 120px">${r.name}</span>
+      <span class="feed-url">${r.email}</span>
+      <button class="btn btn-sm btn-danger" onclick="deleteRecipient(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+function addRecipient() {
+  const name = document.getElementById('new-recipient-name').value.trim();
+  const email = document.getElementById('new-recipient-email').value.trim();
+  if (!name || !email) { showToast('이름과 이메일을 모두 입력하세요', 'error'); return; }
+  recipients.push({ name, email });
+  document.getElementById('new-recipient-name').value = '';
+  document.getElementById('new-recipient-email').value = '';
+  renderRecipients();
+}
+
+function deleteRecipient(i) {
+  recipients.splice(i, 1);
+  renderRecipients();
+}
+
+async function saveNewsletter() {
+  const enabled = document.getElementById('newsletter-enabled').checked;
+  const res = await fetch('/api/settings/newsletter', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled, recipients }),
+  });
+  const json = await res.json();
+  showToast(json.ok ? '뉴스레터 설정 저장 완료' : '저장 실패', json.ok ? 'success' : 'error');
+}
+
+// ── 키워드 관리 ─────────────────────────────────────────────
+function renderKeywords() {
+  const el = document.getElementById('keyword-list');
+  if (!el) return;
+  el.innerHTML = themes.map((t, i) => `
+    <div style="margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem">
+        <span style="width:10px;height:10px;border-radius:50%;background:${themeColor(i)};display:inline-block"></span>
+        <strong style="font-size:.9rem">${t.name}</strong>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.5rem" id="kw-tags-${i}">
+        ${(t.keywords||[]).map((kw,ki) => `
+          <span style="background:var(--surface2);border:1px solid var(--border);border-radius:9999px;padding:.2rem .65rem;font-size:.78rem;display:inline-flex;align-items:center;gap:.3rem">
+            ${kw}
+            <button onclick="removeKeyword(${i},${ki})" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.9rem;line-height:1">×</button>
+          </span>
+        `).join('')}
+        ${!(t.keywords||[]).length ? '<span style="color:var(--text-muted);font-size:.8rem">키워드 없음 — 모든 기사 수집</span>' : ''}
+      </div>
+      <div style="display:flex;gap:.5rem">
+        <input type="text" id="kw-input-${i}" placeholder="키워드 입력 후 Enter" style="max-width:220px;padding:.4rem .75rem;font-size:.85rem"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();addKeyword(${i})}">
+        <button class="btn btn-secondary btn-sm" onclick="addKeyword(${i})">+ 추가</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addKeyword(i) {
+  const input = document.getElementById(`kw-input-${i}`);
+  const kw = input?.value.trim();
+  if (!kw) return;
+  if (!themes[i].keywords) themes[i].keywords = [];
+  if (!themes[i].keywords.includes(kw)) themes[i].keywords.push(kw);
+  input.value = '';
+  renderKeywords();
+}
+
+function removeKeyword(i, ki) {
+  themes[i].keywords.splice(ki, 1);
+  renderKeywords();
+}
+
+async function saveKeywords() {
+  const res = await fetch('/api/settings/themes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ themes }),
+  });
+  const json = await res.json();
+  showToast(json.ok ? '키워드 저장 완료' : '저장 실패', json.ok ? 'success' : 'error');
+}
+
+// ── 시간 입력 동기화 ─────────────────────────────────────────
+function syncTimeValue() {
+  const h = String(Math.min(23, Math.max(0, parseInt(document.getElementById('time-hour').value) || 0))).padStart(2, '0');
+  const m = String(Math.min(59, Math.max(0, parseInt(document.getElementById('time-min').value)  || 0))).padStart(2, '0');
+  document.getElementById('schedule_time_value').value = `${h}:${m}`;
+}
+
+// ── 폴더 선택 ────────────────────────────────────────────────
+async function browseFolder() {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = '열리는 중...';
+  try {
+    const res = await fetch('/api/browse-folder');
+    const data = await res.json();
+    if (data.path) {
+      document.getElementById('vault-path-input').value = data.path;
+      showToast('경로 선택 완료', 'success');
+    }
+  } catch(e) {
+    showToast('폴더 선택 실패', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📁 폴더 선택';
+  }
+}
+
+// ── .env 리로드 (5번) ────────────────────────────────────────
+async function reloadEnv() {
+  const el = document.getElementById('reload-env-result');
+  el.style.display = 'block';
+  el.style.background = 'var(--surface2)';
+  el.style.border = '1px solid var(--border)';
+  el.style.color = 'var(--text-muted)';
+  el.textContent = '리로드 중...';
+  try {
+    const res = await fetch('/api/reload-env', { method: 'POST' });
+    const data = await res.json();
+    el.style.background = '#16a34a15'; el.style.border = '1px solid #22c55e'; el.style.color = '#22c55e';
+    el.textContent = '✅ .env 파일이 서버에 반영되었습니다.';
+  } catch(e) {
+    el.style.background = '#dc262615'; el.style.border = '1px solid #ef4444'; el.style.color = '#ef4444';
+    el.textContent = '❌ 리로드 실패';
+  }
+}
+
+// ── SMTP 테스트 ──────────────────────────────────────────────
+async function testSmtp() {
+  const el = document.getElementById('mail-test-result');
+  el.style.display = 'block';
+  el.style.background = 'var(--surface2)';
+  el.style.border = '1px solid var(--border)';
+  el.style.color = 'var(--text-muted)';
+  el.textContent = '연결 테스트 중...';
+  try {
+    const res = await fetch('/api/test-smtp');
+    const data = await res.json();
+    if (data.ok) {
+      el.style.background = '#16a34a15'; el.style.border = '1px solid #22c55e'; el.style.color = '#22c55e';
+      el.textContent = '✅ SMTP 연결 성공! 이메일 발송이 가능합니다.';
+    } else {
+      el.style.background = '#dc262615'; el.style.border = '1px solid #ef4444'; el.style.color = '#ef4444';
+      el.textContent = `❌ ${data.error}`;
+    }
+  } catch(e) {
+    el.textContent = '❌ 서버 오류';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderRecipients();
+  // renderKeywords()는 app.js에서 themes 로드 완료 후 자동 호출됨
+});
+</script>
+{% endblock %}

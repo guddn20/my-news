@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}위키 — My News{% endblock %}
+
+{% block content %}
+<h1>개인 위키</h1>
+<p class="subtitle">클릭한 기사가 자동 누적되는 테마별 지식 베이스</p>
+
+{% if not wiki_list %}
+<div class="card" style="text-align:center;padding:3rem;margin-bottom:1.5rem">
+  <div style="font-size:3rem;margin-bottom:1rem">🧠</div>
+  <p style="color:var(--text-muted)">아직 위키가 없습니다.</p>
+  <p style="color:var(--text-muted);font-size:.875rem;margin-top:.5rem">
+    브리핑 화면에서 기사를 클릭하면 테마별 위키 파일이 자동 생성됩니다.
+  </p>
+  <a href="/briefing" class="btn btn-primary" style="margin-top:1.5rem">브리핑 보러 가기</a>
+</div>
+{% else %}
+
+<div class="grid-2" style="margin-bottom:1.5rem">
+  {% for w in wiki_list %}
+  <div class="card" style="cursor:pointer" onclick="showWiki({{ loop.index0 }})">
+    <div class="section-title">
+      🧠 {{ w.theme }}
+      <span style="color:var(--text-muted);font-size:.8rem;font-weight:400">{{ w.article_count }}개 기사</span>
+    </div>
+    <p style="color:var(--text-muted);font-size:.8rem">{{ w.path }}</p>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- 위키 내용 뷰어 -->
+<div id="wiki-viewer" class="card" style="display:none">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+    <div class="section-title" id="wiki-title" style="margin:0"></div>
+    <button class="btn btn-secondary btn-sm" onclick="document.getElementById('wiki-viewer').style.display='none'">닫기</button>
+  </div>
+  <div id="wiki-content" class="md-body" style="font-size:.85rem;line-height:1.7;color:var(--text)"></div>
+</div>
+{% endif %}
+
+<!-- 최근 클릭 기록 -->
+{% if recent_clicks %}
+<div class="card" style="margin-top:1.5rem">
+  <div class="section-title">🕐 최근 클릭 기록</div>
+  <table>
+    <thead>
+      <tr><th>기사 제목</th><th>테마</th><th>클릭 시각</th></tr>
+    </thead>
+    <tbody>
+      {% for click in recent_clicks %}
+      <tr>
+        <td><a href="{{ click.url }}" target="_blank" style="color:var(--primary);text-decoration:none;font-size:.85rem">{{ click.title[:50] }}{% if click.title|length > 50 %}…{% endif %}</a></td>
+        <td><span class="badge" style="background:var(--surface2);color:var(--text-muted)">{{ click.theme_id }}</span></td>
+        <td style="color:var(--text-muted);font-size:.8rem">{{ click.clicked_at[:16] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+document.querySelector('.nav-links a[href="/wiki"]')?.classList.add('active');
+
+const wikis = {{ wiki_list | tojson if wiki_list else '[]' }};
+
+function showWiki(i) {
+  const w = wikis[i];
+  document.getElementById('wiki-title').textContent = '🧠 ' + w.theme;
+  document.getElementById('wiki-content').innerHTML = marked.parse(w.content || '');
+  document.getElementById('wiki-viewer').style.display = 'block';
+  document.getElementById('wiki-viewer').scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+{% endblock %}

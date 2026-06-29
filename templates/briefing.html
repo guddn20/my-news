@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}브리핑 — My News{% endblock %}
+
+{% block content %}
+<h1>오늘의 브리핑</h1>
+<p class="subtitle">{{ summaries | length }}개 테마 · 전날 기사 기준</p>
+
+{% if not summaries %}
+<div class="card" style="text-align:center;padding:3rem">
+  <p style="color:var(--text-muted)">브리핑이 아직 생성되지 않았습니다.</p>
+  <a href="/" class="btn btn-primary" style="margin-top:1.5rem">대시보드에서 실행</a>
+</div>
+{% else %}
+
+<!-- 추천 기사 섹션 (Phase 3 — 클릭 데이터 있을 때만) -->
+{% if recommendations %}
+<div class="recommend-card" style="margin-bottom:1.5rem">
+  <div class="section-title" style="color:#a78bfa">⭐ 오늘의 추천 기사</div>
+  <p style="color:var(--text-muted);font-size:.8rem;margin-bottom:.75rem">관심사 기반 추천</p>
+  {% for article in recommendations %}
+  <a
+    class="article-link"
+    href="{{ article.link }}"
+    target="_blank"
+    rel="noopener"
+    data-title="{{ article.title }}"
+    data-theme="{{ article.get('theme_id', '') }}"
+    data-url="{{ article.link }}"
+    onclick="trackClick(this)"
+    style="color:#a78bfa;padding:.4rem 0"
+  >
+    ⭐ {{ article.title }}
+    <span class="badge" style="background:#8b5cf622;color:#a78bfa;font-size:.7rem">{{ article.recommend_reason }}</span>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- 테마별 요약 카드 -->
+{% for theme_id, data in summaries.items() %}
+<div class="card" style="margin-bottom:1.25rem">
+  <div class="section-title">
+    <span class="badge" style="background:var(--primary);color:#fff">{{ data.theme_name or theme_id }}</span>
+    <span style="color:var(--text-muted);font-size:.8rem;font-weight:400">{{ data.articles | length }}개 기사</span>
+  </div>
+
+  <div class="md-body" data-md="{{ data.summary | e }}" style="line-height:1.75;font-size:.9rem;margin-bottom:1rem"></div>
+
+  {% if data.articles %}
+  <div style="border-top:1px solid var(--border);padding-top:.75rem">
+    {% for article in data.articles %}
+    <a
+      class="article-link"
+      href="{{ article.link }}"
+      target="_blank"
+      rel="noopener"
+      data-title="{{ article.title }}"
+      data-theme="{{ theme_id }}"
+      data-url="{{ article.link }}"
+      onclick="trackClick(this)"
+    >
+      ↗ {{ article.title }}
+      <span style="color:var(--text-muted);font-size:.75rem">— {{ article.source }}</span>
+    </a>
+    {% endfor %}
+  </div>
+  <p style="color:var(--text-muted);font-size:.75rem;margin-top:.5rem">💡 클릭하면 위키에 자동 저장됩니다</p>
+  {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+document.querySelector('.nav-links a[href="/briefing"]')?.classList.add('active');
+
+// 마크다운 렌더링 (3번)
+document.querySelectorAll('.md-body').forEach(el => {
+  const raw = el.dataset.md || '';
+  el.innerHTML = marked.parse(raw);
+});
+
+async function trackClick(el) {
+  try {
+    await fetch('/api/track-click', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: el.dataset.title,
+        theme: el.dataset.theme,
+        url: el.dataset.url,
+      }),
+    });
+  } catch (_) {}
+}
+</script>
+{% endblock %}

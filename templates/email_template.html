@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  body{margin:0;padding:0;background:#f8fafc;font-family:'Segoe UI',system-ui,sans-serif;color:#1e293b}
+  .wrap{max-width:600px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px #0001}
+  .header{background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:32px 40px;color:#fff}
+  .header h1{margin:0;font-size:1.5rem}
+  .header p{margin:6px 0 0;opacity:.8;font-size:.9rem}
+  .body{padding:32px 40px}
+  .theme-block{margin-bottom:28px;padding-bottom:28px;border-bottom:1px solid #e2e8f0}
+  .theme-block:last-child{border-bottom:none;margin-bottom:0}
+  .theme-badge{display:inline-block;padding:3px 12px;border-radius:9999px;font-size:.75rem;font-weight:700;background:#6366f115;color:#6366f1;margin-bottom:12px}
+  .summary{font-size:.9rem;line-height:1.7;white-space:pre-wrap;color:#334155}
+  .articles{margin-top:12px}
+  .articles a{display:block;color:#6366f1;text-decoration:none;font-size:.85rem;padding:4px 0;border-bottom:1px solid #f1f5f9}
+  .articles a:hover{text-decoration:underline}
+  .footer{background:#f8fafc;padding:20px 40px;text-align:center;font-size:.78rem;color:#94a3b8;border-top:1px solid #e2e8f0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1>📰 My News 브리핑</h1>
+    <p>{{ date }} · AI가 요약한 오늘의 뉴스</p>
+  </div>
+  <div class="body">
+    {% for theme_id, data in summaries.items() %}
+    <div class="theme-block">
+      <div class="theme-badge">{{ data.theme_name or theme_id }}</div>
+      <div class="summary">{{ data.summary }}</div>
+      {% if data.articles %}
+      <div class="articles">
+        {% for article in data.articles[:3] %}
+        <a href="{{ article.link }}" target="_blank">↗ {{ article.title }}</a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  <div class="footer">
+    My News · 자동 생성된 뉴스레터입니다
+  </div>
+</div>
+</body>
+</html>

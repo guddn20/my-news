@@ -1,0 +1,85 @@
+{
+  "schedule_time": "07:00",
+  "obsidian_vault_path": "C:\\Users\\user\\Desktop\\Obsidian\\Hobsidian",
+  "themes": [
+    {
+      "id": "it",
+      "name": "IT/테크",
+      "feeds": [
+        {
+          "name": "ZDNet Korea",
+          "url": "https://www.zdnet.co.kr/rss/rss.xml"
+        },
+        {
+          "name": "연합뉴스",
+          "url": "https://www.yna.co.kr/rss/industry.xml"
+        }
+      ],
+      "keywords": [
+        "AI",
+        "IT"
+      ]
+    },
+    {
+      "id": "economy",
+      "name": "경제",
+      "feeds": [
+        {
+          "name": "한국경제",
+          "url": "https://www.hankyung.com/feed/all-news"
+        },
+        {
+          "name": "동아",
+          "url": "https://rss.donga.com/economy.xml"
+        },
+        {
+          "name": "연합뉴스",
+          "url": "https://www.yna.co.kr/rss/economy.xml"
+        }
+      ]
+    },
+    {
+      "id": "___1782704689869",
+      "name": "농구",
+      "feeds": [
+        {
+          "name": "스포츠경향",
+          "url": "https://sports.khan.co.kr/rss/basketball"
+        },
+        {
+          "name": "동아",
+          "url": "https://rss.donga.com/sportsdonga/sports.xml"
+        },
+        {
+          "name": "연합뉴스",
+          "url": "https://www.yna.co.kr/rss/sports.xml"
+        },
+        {
+          "name": "CBC",
+          "url": "http://rss.cbc.ca/lineup/sports-basketball.xml"
+        },
+        {
+          "name": "OSEN",
+          "url": "https://osen.mt.co.kr/rss/news.xml"
+        },
+        {
+          "name": "스포츠조선",
+          "url": "https://sports.chosun.com/rss/sports_all.xml"
+        },
+        {
+          "name": "구글뉴스 스포츠",
+          "url": "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRFp1ZEdvU0FtdHZHZ0pMVWlnQVAB?hl=ko&gl=KR&ceid=KR:ko"
+        }
+      ],
+      "keywords": [
+        "농구",
+        "NBA"
+      ]
+    }
+  ],
+  "newsletter": {
+    "enabled": false,
+    "recipients": []
+  },
+  "collect_days": 2
+}
