@@ -15,9 +15,11 @@
   .theme-badge{display:inline-block;padding:3px 12px;border-radius:9999px;font-size:.75rem;font-weight:700;background:#6366f115;color:#6366f1;margin-bottom:12px}
   .summary{font-size:.9rem;line-height:1.7;white-space:pre-wrap;color:#334155}
   .articles{margin-top:12px}
-  .articles a{display:block;color:#6366f1;text-decoration:none;font-size:.85rem;padding:4px 0;border-bottom:1px solid #f1f5f9}
+  .articles a{display:block;color:#6366f1;text-decoration:none;font-size:.85rem;padding:5px 0;border-bottom:1px solid #f1f5f9}
   .articles a:hover{text-decoration:underline}
+  .article-meta{color:#94a3b8;font-size:.75rem;margin-left:.3rem}
   .footer{background:#f8fafc;padding:20px 40px;text-align:center;font-size:.78rem;color:#94a3b8;border-top:1px solid #e2e8f0}
+  .footer a{color:#6366f1;text-decoration:none}
 </style>
 </head>
 <body>
@@ -34,7 +36,10 @@
       {% if data.articles %}
       <div class="articles">
         {% for article in data.articles[:3] %}
-        <a href="{{ article.link }}" target="_blank">↗ {{ article.title }}</a>
+        <a href="{{ tracking_url(article.link, theme_id, article.title) }}" target="_blank">
+          ↗ {{ article.title }}
+          <span class="article-meta">{{ article.source }}{% if article.published %} · {{ article.published }}{% endif %}</span>
+        </a>
         {% endfor %}
       </div>
       {% endif %}
@@ -42,7 +47,8 @@
     {% endfor %}
   </div>
   <div class="footer">
-    My News · 자동 생성된 뉴스레터입니다
+    My News · 자동 생성된 뉴스레터입니다<br>
+    <a href="{{ tracking_url('', '', '') or '#' }}">브리핑 전체 보기</a>
   </div>
 </div>
 </body>

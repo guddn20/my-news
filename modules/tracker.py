@@ -11,11 +11,19 @@ async def init_db():
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("""
             CREATE TABLE IF NOT EXISTS clicks (
-                id        INTEGER PRIMARY KEY AUTOINCREMENT,
-                title     TEXT NOT NULL,
-                theme_id  TEXT NOT NULL,
-                url       TEXT NOT NULL,
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                title      TEXT NOT NULL,
+                theme_id   TEXT NOT NULL,
+                url        TEXT NOT NULL,
                 clicked_at TEXT NOT NULL
+            )
+        """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS dislikes (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                url         TEXT NOT NULL UNIQUE,
+                title       TEXT NOT NULL,
+                disliked_at TEXT NOT NULL
             )
         """)
         await db.commit()
@@ -28,6 +36,28 @@ async def record_click(title: str, theme_id: str, url: str):
             (title, theme_id, url, datetime.now().isoformat()),
         )
         await db.commit()
+
+
+async def record_dislike(url: str, title: str):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "INSERT OR REPLACE INTO dislikes (url, title, disliked_at) VALUES (?,?,?)",
+            (url, title, datetime.now().isoformat()),
+        )
+        await db.commit()
+
+
+async def remove_dislike(url: str):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("DELETE FROM dislikes WHERE url=?", (url,))
+        await db.commit()
+
+
+async def get_disliked_urls() -> set[str]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("SELECT url FROM dislikes")
+        rows = await cursor.fetchall()
+    return {r[0] for r in rows}
 
 
 async def get_interest_scores() -> dict[str, int]:

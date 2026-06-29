@@ -5,16 +5,34 @@
 <h1>대시보드</h1>
 <p class="subtitle">AI 일일 뉴스 브리핑 현황</p>
 
-<div class="grid-3">
-  <div class="card">
+<!-- 오늘 실행 여부 배너 -->
+{% if today_run %}
+<div class="today-banner today-banner--done">
+  ✅ 오늘 브리핑 완료
+  <span class="today-meta">{{ today_run.executed_at[11:] }} 실행 · 기사 {{ today_run.total_articles }}개
+    {% if today_run.overwritten %} · 덮어씀{% endif %}
+    {% if today_run.mail_sent %} · 메일 {{ today_run.mail_sent }}건{% endif %}
+  </span>
+  <a href="/briefing" class="btn btn-sm btn-primary" style="margin-left:auto">브리핑 보기 →</a>
+</div>
+{% else %}
+<div class="today-banner today-banner--pending">
+  ⏳ 오늘 브리핑이 아직 생성되지 않았습니다
+  <span class="today-meta">다음 자동 실행: {{ next_run or schedule_time }}</span>
+</div>
+{% endif %}
+
+<!-- 통계 카드 -->
+<div class="grid-3" style="margin-top:1.25rem">
+  <div class="card stat-card">
     <div class="stat-label">다음 자동 실행</div>
     <div class="stat-value" style="font-size:1.35rem">{{ next_run or '—' }}</div>
     <div class="stat-sub">매일 {{ schedule_time }} 예약</div>
   </div>
-  <div class="card">
+  <div class="card stat-card">
     <div class="stat-label">마지막 실행</div>
     {% if logs %}
-    <div class="stat-value" style="font-size:1.1rem">{{ logs[0].executed_at }}</div>
+    <div class="stat-value" style="font-size:1.05rem">{{ logs[0].executed_at }}</div>
     <div class="stat-sub">
       <span class="badge badge-{{ 'success' if logs[0].status == 'success' else 'error' }}">
         {{ '성공' if logs[0].status == 'success' else '실패' }}
@@ -27,30 +45,62 @@
     <div class="stat-sub">아직 실행 기록 없음</div>
     {% endif %}
   </div>
-  <div class="card">
-    <div class="stat-label">상태</div>
-    <div class="stat-value" style="color:var(--success)">●</div>
-    <div class="stat-sub">서버 실행 중</div>
+  <div class="card stat-card">
+    <div class="stat-label">서버 상태</div>
+    <div class="stat-value" style="color:var(--success);font-size:1.8rem">●</div>
+    <div class="stat-sub">정상 실행 중</div>
   </div>
 </div>
 
 <!-- 수동 실행 -->
-<div class="card" style="margin-bottom:1.5rem">
+<div class="card run-card" style="margin-bottom:1.5rem">
   <div class="section-title">▶ 수동 실행</div>
-  <p style="color:var(--text-muted);font-size:.875rem;margin-bottom:1rem">
-    RSS 수집 → Claude 요약 → Obsidian 저장 → 이메일 발송 순으로 실행됩니다.
+  <p style="color:var(--text-muted);font-size:.875rem;margin-bottom:1.25rem">
+    RSS 수집 → Claude AI 요약 → Obsidian 저장 → 이메일 발송 순으로 실행됩니다.
   </p>
-  <div style="display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap;margin-bottom:1rem">
+
+  <!-- 진행 단계 표시 -->
+  <div id="progress-wrap" style="display:none;margin-bottom:1.25rem">
+    <div class="progress-steps">
+      <div class="progress-step" id="ps-collecting">
+        <div class="ps-dot"></div>
+        <div class="ps-label">RSS 수집</div>
+      </div>
+      <div class="progress-line"></div>
+      <div class="progress-step" id="ps-summarizing">
+        <div class="ps-dot"></div>
+        <div class="ps-label">AI 요약</div>
+      </div>
+      <div class="progress-line"></div>
+      <div class="progress-step" id="ps-saving">
+        <div class="ps-dot"></div>
+        <div class="ps-label">저장</div>
+      </div>
+      <div class="progress-line"></div>
+      <div class="progress-step" id="ps-emailing">
+        <div class="ps-dot"></div>
+        <div class="ps-label">이메일</div>
+      </div>
+      <div class="progress-line"></div>
+      <div class="progress-step" id="ps-done">
+        <div class="ps-dot"></div>
+        <div class="ps-label">완료</div>
+      </div>
+    </div>
+    <div id="progress-label" style="text-align:center;font-size:.82rem;color:var(--text-muted);margin-top:.6rem"></div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap;margin-bottom:1.25rem">
     <label style="font-size:.875rem;cursor:pointer;display:flex;align-items:center;gap:.4rem">
       <input type="checkbox" id="overwrite-check" style="width:auto">
       Obsidian 기존 브리핑 덮어쓰기
     </label>
   </div>
   <div style="display:flex;gap:.75rem;flex-wrap:wrap">
-    <button class="btn btn-primary" id="run-btn" onclick="runNow()">▶ 지금 실행</button>
+    <button class="btn btn-primary btn-run" id="run-btn" onclick="runNow()">▶ 지금 실행</button>
     <button class="btn btn-secondary" id="email-btn" onclick="sendEmailNow()">📧 이메일 즉시 발송</button>
   </div>
-  <div id="run-result"></div>
+  <div id="run-result" style="margin-top:1rem;padding:1rem;border-radius:8px;display:none;font-size:.875rem;line-height:1.6"></div>
 </div>
 
 <div class="grid-2">
@@ -60,9 +110,10 @@
     {% if chart_data %}
     <canvas id="interestChart" height="200"></canvas>
     {% else %}
-    <p style="color:var(--text-muted);font-size:.875rem;text-align:center;padding:2rem 0">
-      브리핑에서 기사를 클릭하면 관심도가 쌓입니다.
-    </p>
+    <div style="text-align:center;padding:2.5rem 0">
+      <div style="font-size:2.5rem;margin-bottom:.75rem">📊</div>
+      <p style="color:var(--text-muted);font-size:.875rem">브리핑에서 기사를 클릭하면<br>관심도가 쌓입니다</p>
+    </div>
     {% endif %}
   </div>
 
@@ -70,25 +121,27 @@
   <div class="card">
     <div class="section-title">📋 최근 실행 로그</div>
     {% if logs %}
-    <table>
-      <thead>
-        <tr><th>일시</th><th>기사</th><th>메일</th><th>상태</th></tr>
-      </thead>
-      <tbody>
-        {% for log in logs %}
-        <tr>
-          <td style="font-size:.8rem">{{ log.executed_at }}</td>
-          <td>{{ log.total_articles }}</td>
-          <td>{{ log.mail_sent or 0 }}</td>
-          <td>
-            <span class="badge badge-{{ 'success' if log.status == 'success' else 'error' }}">
-              {{ '성공' if log.status == 'success' else '실패' }}
-            </span>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="log-list">
+      {% for log in logs %}
+      <div class="log-row log-row--{{ log.status }}">
+        <div class="log-status-dot"></div>
+        <div class="log-body">
+          <div class="log-time">{{ log.executed_at }}
+            {% if log.trigger == 'manual' %}<span class="badge" style="background:var(--surface2);color:var(--text-muted);font-size:.68rem">수동</span>{% endif %}
+            {% if log.get('overwritten') %}<span class="badge" style="background:#6366f122;color:var(--primary);font-size:.68rem">덮어씀</span>{% endif %}
+          </div>
+          {% if log.status == 'success' %}
+          <div class="log-detail">기사 {{ log.total_articles }}개
+            {% if log.mail_sent %} · 메일 {{ log.mail_sent }}건{% endif %}
+            {% if log.warning %} · ⚠️ {{ log.warning }}{% endif %}
+          </div>
+          {% else %}
+          <div class="log-detail log-detail--error">{{ log.get('error', '알 수 없는 오류') }}</div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
     {% else %}
     <p style="color:var(--text-muted);text-align:center;padding:2rem">실행 기록 없음</p>
     {% endif %}
@@ -124,5 +177,31 @@ new Chart(ctx, {
   }
 });
 {% endif %}
+
+// 진행 단계 → step ID 매핑
+const STEP_ORDER = ['collecting','summarizing','saving','emailing','done'];
+
+function updateProgressUI(data) {
+  const wrap = document.getElementById('progress-wrap');
+  const label = document.getElementById('progress-label');
+  if (!wrap) return;
+
+  if (!data.running && data.step === 'idle') { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  label.textContent = data.label || '';
+
+  const curIdx = STEP_ORDER.indexOf(data.step);
+  STEP_ORDER.forEach((s, i) => {
+    const el = document.getElementById(`ps-${s}`);
+    if (!el) return;
+    el.classList.remove('ps-active','ps-done','ps-error');
+    if (data.step === 'error') {
+      if (i < curIdx) el.classList.add('ps-done');
+    } else {
+      if (i < curIdx)      el.classList.add('ps-done');
+      else if (i === curIdx) el.classList.add('ps-active');
+    }
+  });
+}
 </script>
 {% endblock %}

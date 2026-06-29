@@ -6,6 +6,13 @@ Mock 모드: .env에 ANTHROPIC_API_KEY가 없거나 MOCK_SUMMARY=true 이면
 import os
 import anthropic
 
+_LENGTH_TOKENS = {"short": 256, "medium": 512, "detailed": 900}
+_LENGTH_HINT = {
+    "short":    "1~2줄로 핵심만 요약하세요.",
+    "medium":   "2~3줄로 요약하고, 중요 기사 1~3개를 마크다운 링크로 포함하세요.",
+    "detailed": "3~5줄로 상세히 요약하고, 주요 기사 3~5개를 마크다운 링크로 포함하세요. 트렌드나 맥락도 간략히 언급하세요.",
+}
+
 
 def _is_mock() -> bool:
     key = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -24,15 +31,16 @@ def _mock_summary(theme_name: str, articles: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def _build_prompt(theme_name: str, articles: list[dict]) -> str:
+def _build_prompt(theme_name: str, articles: list[dict], length: str) -> str:
+    hint = _LENGTH_HINT.get(length, _LENGTH_HINT["medium"])
     lines = [f"테마: {theme_name}", ""]
     for i, a in enumerate(articles[:10], 1):
-        lines.append(f"{i}. [{a['title']}] {a['summary'][:200]}")
+        lines.append(f"{i}. [{a['title']}]({a['link']}) {a['summary'][:200]}")
     lines += [
         "",
-        "위 기사들을 2~3줄 한국어로 요약하고, 중요한 기사 제목과 링크를 1~3개 골라 마크다운 형식으로 정리하세요.",
+        f"위 기사들을 한국어로 요약하세요. {hint}",
         "출력 형식:",
-        "**요약**: (2~3줄 요약문)",
+        "**요약**: (요약문)",
         "",
         "**주요 기사**:",
         "- [기사 제목](링크)",
@@ -43,10 +51,11 @@ def _build_prompt(theme_name: str, articles: list[dict]) -> str:
 async def summarize_themes(
     themes: list[dict],
     articles_by_theme: dict[str, list[dict]],
+    summary_length: str = "medium",
 ) -> dict[str, dict]:
     """
     각 테마별로 Claude API에 요약 요청.
-    반환값: {theme_id: {"summary": str, "articles": [...]}}
+    반환값: {theme_id: {"summary": str, "articles": [...], "theme_name": str}}
     """
     mock = _is_mock()
     if mock:
@@ -54,23 +63,24 @@ async def summarize_themes(
     else:
         client = anthropic.AsyncAnthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
+    max_tokens = _LENGTH_TOKENS.get(summary_length, 512)
     results: dict[str, dict] = {}
 
     for theme in themes:
         tid = theme["id"]
         articles = articles_by_theme.get(tid, [])
         if not articles:
-            results[tid] = {"theme_name": theme["name"], "summary": "수집된 기사가 없습니다.", "articles": []}
+            results[tid] = {"theme_name": theme["name"], "summary": "", "articles": []}
             continue
 
         if mock:
             summary_text = _mock_summary(theme["name"], articles)
         else:
-            prompt = _build_prompt(theme["name"], articles)
+            prompt = _build_prompt(theme["name"], articles, summary_length)
             try:
                 msg = await client.messages.create(
                     model="claude-sonnet-4-6",
-                    max_tokens=512,
+                    max_tokens=max_tokens,
                     messages=[{"role": "user", "content": prompt}],
                 )
                 summary_text = msg.content[0].text
@@ -80,8 +90,8 @@ async def summarize_themes(
 
         results[tid] = {
             "theme_name": theme["name"],
-            "summary": summary_text,
-            "articles": articles[:5],
+            "summary":    summary_text,
+            "articles":   articles[:5],
         }
         print(f"[summarizer] {theme['name']} {'(mock)' if mock else ''} 완료")
 
