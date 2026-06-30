@@ -5,6 +5,13 @@
 <h1>오늘의 브리핑</h1>
 <p class="subtitle">{{ summaries | length }}개 테마 · AI 요약</p>
 
+{% if headline %}
+<div class="headline-banner">
+  <span class="headline-icon">📌</span>
+  <span class="headline-text">오늘의 핵심 : {{ headline }}</span>
+</div>
+{% endif %}
+
 {% if not summaries %}
 <div class="card" style="text-align:center;padding:3rem">
   <div style="font-size:3rem;margin-bottom:1rem">📭</div>
@@ -19,9 +26,9 @@
   <div class="section-title" style="color:#a78bfa">⭐ 오늘의 추천 기사</div>
   <p style="color:var(--text-muted);font-size:.8rem;margin-bottom:.75rem">클릭 기록 기반 맞춤 추천</p>
   {% for article in recommendations %}
-  <a class="article-link" href="{{ article.link }}" target="_blank" rel="noopener"
-     data-title="{{ article.title }}" data-theme="{{ article.get('theme_id','') }}" data-url="{{ article.link }}"
-     onclick="trackClick(this)" style="color:#a78bfa;padding:.4rem 0">
+  <a class="article-link" href="{{ article.link }}" target="_blank" rel="noopener" data-title="{{ article.title }}"
+    data-theme="{{ article.get('theme_id','') }}" data-url="{{ article.link }}" onclick="trackClick(this)"
+    style="color:#a78bfa;padding:.4rem 0">
     ⭐ {{ article.title }}
     <span class="badge" style="background:#8b5cf622;color:#a78bfa;font-size:.7rem">{{ article.recommend_reason }}</span>
   </a>
@@ -52,13 +59,12 @@
   <div class="briefing-articles">
     <div class="briefing-articles-label">수집 기사</div>
     {% for article in data.articles %}
-    <div class="article-row" id="ar-{{ loop.index }}-{{ theme_id }}"
-         data-url="{{ article.link }}"
-         data-disliked="{{ 'true' if article.link in disliked_urls else 'false' }}">
+    <div class="article-row" id="ar-{{ loop.index }}-{{ theme_id }}" data-url="{{ article.link }}"
+      data-disliked="{{ 'true' if article.link in disliked_urls else 'false' }}">
       <div class="article-row-main">
         <a class="article-link" href="{{ article.link }}" target="_blank" rel="noopener"
-           data-title="{{ article.title }}" data-theme="{{ theme_id }}" data-url="{{ article.link }}"
-           onclick="trackClick(this)">
+          data-title="{{ article.title }}" data-theme="{{ theme_id }}" data-url="{{ article.link }}"
+          onclick="trackClick(this)">
           ↗ {{ article.title }}
         </a>
         <div class="article-meta-row">
@@ -69,8 +75,7 @@
         </div>
       </div>
       <button class="dislike-btn {% if article.link in disliked_urls %}dislike-btn--active{% endif %}"
-              onclick="toggleDislike(this, '{{ article.link | e }}', '{{ article.title | e }}')"
-              title="관심 없음">
+        onclick="toggleDislike(this, '{{ article.link | e }}', '{{ article.title | e }}')" title="관심 없음">
         {{ '🚫' if article.link in disliked_urls else '✕' }}
       </button>
     </div>
@@ -117,47 +122,47 @@
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
-document.querySelector('.nav-links a[href="/briefing"]')?.classList.add('active');
+  document.querySelector('.nav-links a[href="/briefing"]')?.classList.add('active');
 
-// 마크다운 렌더링
-document.querySelectorAll('.md-body').forEach(el => {
-  el.innerHTML = marked.parse(el.dataset.md || '');
-});
-
-async function trackClick(el) {
-  try {
-    await fetch('/api/track-click', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: el.dataset.title, theme: el.dataset.theme, url: el.dataset.url }),
-    });
-  } catch (_) {}
-}
-
-async function toggleDislike(btn, url, title) {
-  const row    = btn.closest('.article-row');
-  const active = row.dataset.disliked === 'true';
-  const undo   = active;
-
-  await fetch('/api/dislike-article', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url, title, undo }),
+  // 마크다운 렌더링
+  document.querySelectorAll('.md-body').forEach(el => {
+    el.innerHTML = marked.parse(el.dataset.md || '');
   });
 
-  if (undo) {
-    row.dataset.disliked = 'false';
-    row.classList.remove('article-row--disliked');
-    btn.classList.remove('dislike-btn--active');
-    btn.textContent = '✕';
-    btn.title = '관심 없음';
-  } else {
-    row.dataset.disliked = 'true';
-    row.classList.add('article-row--disliked');
-    btn.classList.add('dislike-btn--active');
-    btn.textContent = '🚫';
-    btn.title = '관심 없음 취소';
+  async function trackClick(el) {
+    try {
+      await fetch('/api/track-click', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: el.dataset.title, theme: el.dataset.theme, url: el.dataset.url }),
+      });
+    } catch (_) { }
   }
-}
+
+  async function toggleDislike(btn, url, title) {
+    const row = btn.closest('.article-row');
+    const active = row.dataset.disliked === 'true';
+    const undo = active;
+
+    await fetch('/api/dislike-article', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, title, undo }),
+    });
+
+    if (undo) {
+      row.dataset.disliked = 'false';
+      row.classList.remove('article-row--disliked');
+      btn.classList.remove('dislike-btn--active');
+      btn.textContent = '✕';
+      btn.title = '관심 없음';
+    } else {
+      row.dataset.disliked = 'true';
+      row.classList.add('article-row--disliked');
+      btn.classList.add('dislike-btn--active');
+      btn.textContent = '🚫';
+      btn.title = '관심 없음 취소';
+    }
+  }
 </script>
 {% endblock %}

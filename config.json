@@ -13,6 +13,26 @@
         {
           "name": "연합뉴스",
           "url": "https://www.yna.co.kr/rss/industry.xml"
+        },
+        {
+          "name": "전자신문",
+          "url": "https://www.etnews.com/etnews/rss/0000000000.xml"
+        },
+        {
+          "name": "IT동아",
+          "url": "https://it.donga.com/rss/rss.xml"
+        },
+        {
+          "name": "Bloter",
+          "url": "https://www.bloter.net/feed"
+        },
+        {
+          "name": "디지털데일리",
+          "url": "https://www.ddaily.co.kr/rss/allArticle.xml"
+        },
+        {
+          "name": "구글뉴스 IT",
+          "url": "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGRqTVhZU0FtdHZHZ0pMVWlnQVAB?hl=ko&gl=KR&ceid=KR:ko"
         }
       ],
       "keywords": [
@@ -35,6 +55,26 @@
         {
           "name": "연합뉴스",
           "url": "https://www.yna.co.kr/rss/economy.xml"
+        },
+        {
+          "name": "매일경제",
+          "url": "https://www.mk.co.kr/rss/40300001/"
+        },
+        {
+          "name": "머니투데이",
+          "url": "https://www.mt.co.kr/rss/news/invest_news_list.xml"
+        },
+        {
+          "name": "이데일리",
+          "url": "https://www.edaily.co.kr/rss/feed"
+        },
+        {
+          "name": "서울경제",
+          "url": "https://www.sedaily.com/RSSFeed/Economy"
+        },
+        {
+          "name": "구글뉴스 경제",
+          "url": "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNREppTm1jU0FtdHZHZ0pMVWlnQVAB?hl=ko&gl=KR&ceid=KR:ko"
         }
       ]
     },
@@ -82,5 +122,5 @@
     "recipients": []
   },
   "collect_days": 2,
-  "summary_length": "detailed"
+  "summary_length": "medium"
 }

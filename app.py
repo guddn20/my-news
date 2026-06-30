@@ -94,7 +94,7 @@ async def run_briefing(overwrite_note: bool = False) -> dict:
         _set_progress("saving", "Obsidian에 저장 중…", 75)
         summaries_with_articles = {
             tid: data for tid, data in summaries.items()
-            if data.get("articles")
+            if data.get("articles") and not tid.startswith("_")
         }
 
         last_summaries = summaries
@@ -188,12 +188,15 @@ async def briefing_view(request: Request):
     scores          = await tracker.get_interest_scores()
     disliked        = await tracker.get_disliked_urls()
     recommendations = recommender.get_top_articles(last_summaries, scores)
+    headline        = last_summaries.get("_headline", {}).get("headline", "")
+    visible         = {tid: d for tid, d in last_summaries.items() if not tid.startswith("_")}
     return templates.TemplateResponse("briefing.html", {
         "request":         request,
-        "summaries":       last_summaries,
+        "summaries":       visible,
         "themes":          cfg["themes"],
         "recommendations": recommendations,
         "disliked_urls":   list(disliked),
+        "headline":        headline,
     })
 
 
