@@ -49,58 +49,60 @@
 
   <!-- 히트맵 -->
   <div class="card" style="margin-bottom:1.5rem">
-    <div class="section-title">🗓️ 활동 히트맵 <span style="font-size:.78rem;font-weight:400;color:var(--text-muted)">최근 1년</span></div>
-    <div id="heatmap-wrap">
-      <div id="heatmap" class="heatmap"></div>
-      <div class="heatmap-legend">
-        <span style="color:var(--text-muted);font-size:.75rem">적음</span>
-        <div class="heatmap-cell" style="background:var(--hm-0)"></div>
-        <div class="heatmap-cell" style="background:var(--hm-1)"></div>
-        <div class="heatmap-cell" style="background:var(--hm-2)"></div>
-        <div class="heatmap-cell" style="background:var(--hm-3)"></div>
-        <div class="heatmap-cell" style="background:var(--hm-4)"></div>
-        <span style="color:var(--text-muted);font-size:.75rem">많음</span>
-      </div>
+    <div class="section-title" style="cursor:pointer;user-select:none" onclick="toggleSection('heatmap-section','heatmap-chevron')">
+      🗓️ 활동 히트맵 <span style="font-size:.78rem;font-weight:400;color:var(--text-muted)">최근 1년</span>
+      <span id="heatmap-chevron" style="float:right;font-size:.85rem;color:var(--text-muted)">▲</span>
     </div>
-    <div id="heatmap-tooltip" class="heatmap-tooltip" style="display:none"></div>
-    <p id="heatmap-total" style="color:var(--text-muted);font-size:.82rem;margin-top:.75rem;text-align:center"></p>
+    <div id="heatmap-section">
+      <div id="heatmap-wrap">
+        <div id="heatmap" class="heatmap"></div>
+        <div class="heatmap-legend">
+          <span style="color:var(--text-muted);font-size:.75rem">적음</span>
+          <div class="heatmap-cell" style="background:var(--hm-0)"></div>
+          <div class="heatmap-cell" style="background:var(--hm-1)"></div>
+          <div class="heatmap-cell" style="background:var(--hm-2)"></div>
+          <div class="heatmap-cell" style="background:var(--hm-3)"></div>
+          <div class="heatmap-cell" style="background:var(--hm-4)"></div>
+          <span style="color:var(--text-muted);font-size:.75rem">많음</span>
+        </div>
+      </div>
+      <div id="heatmap-tooltip" class="heatmap-tooltip" style="display:none"></div>
+      <p id="heatmap-total" style="color:var(--text-muted);font-size:.82rem;margin-top:.75rem;text-align:center"></p>
+    </div>
   </div>
 
   <!-- 테마 트렌드 -->
   <div class="card" style="margin-bottom:1.5rem">
-    <div class="section-title">📈 테마별 트렌드 <span style="font-size:.78rem;font-weight:400;color:var(--text-muted)">최근 30일</span></div>
-    <div id="trend-empty" style="display:none;text-align:center;padding:2rem;color:var(--text-muted);font-size:.875rem">
-      데이터가 부족합니다. 브리핑에서 기사를 클릭해보세요.
+    <div class="section-title" style="cursor:pointer;user-select:none" onclick="toggleSection('trend-section','trend-chevron')">
+      📈 테마별 트렌드 <span style="font-size:.78rem;font-weight:400;color:var(--text-muted)">최근 30일</span>
+      <span id="trend-chevron" style="float:right;font-size:.85rem;color:var(--text-muted)">▲</span>
     </div>
-    <canvas id="trendChart" height="200" style="display:none"></canvas>
+    <div id="trend-section">
+      <div id="trend-empty" style="display:none;text-align:center;padding:2rem;color:var(--text-muted);font-size:.875rem">
+        데이터가 부족합니다. 브리핑에서 기사를 클릭해보세요.
+      </div>
+      <canvas id="trendChart" height="200" style="display:none"></canvas>
+    </div>
   </div>
 
   <!-- 최근 클릭 -->
   <div class="card">
-    <div class="section-title">🕐 최근 클릭 기록</div>
-    {% if recent_clicks %}
-    <table>
-      <thead>
-        <tr><th>기사 제목</th><th>테마</th><th>클릭 시각</th></tr>
-      </thead>
-      <tbody>
-        {% for click in recent_clicks %}
-        <tr>
-          <td>
-            <a href="{{ click.url }}" target="_blank" style="color:var(--primary);text-decoration:none;font-size:.85rem">
-              {{ click.title[:50] }}{% if click.title|length > 50 %}…{% endif %}
-            </a>
-          </td>
-          <td><span class="badge" style="background:var(--surface2);color:var(--text-muted)">{{ click.theme_id }}</span></td>
-          <td style="color:var(--text-muted);font-size:.8rem">{{ click.clicked_at[:16] }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% else %}
-    <p style="color:var(--text-muted);text-align:center;padding:2rem">클릭 기록 없음</p>
-    {% endif %}
+    <div class="section-title" style="cursor:pointer;user-select:none" onclick="toggleSection('click-section','click-chevron')">
+      🕐 최근 클릭 기록
+      <span id="click-chevron" style="float:right;font-size:.85rem;color:var(--text-muted)">▲</span>
+    </div>
+    <div id="click-section">
+      <table id="click-table" style="display:none">
+        <thead>
+          <tr><th>기사 제목</th><th>테마</th><th>클릭 시각</th><th style="width:2.5rem"></th></tr>
+        </thead>
+        <tbody id="click-history-body"></tbody>
+      </table>
+      <p id="click-empty" style="color:var(--text-muted);text-align:center;padding:2rem;display:none">클릭 기록 없음</p>
+      <div id="click-pagination" style="display:flex;justify-content:center;align-items:center;gap:.3rem;padding:.8rem 0;display:none"></div>
+    </div>
   </div>
+
 </div>
 {% endblock %}
 
@@ -108,6 +110,112 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script>
 document.querySelector('.nav-links a[href="/wiki"]')?.classList.add('active');
+
+function toggleSection(sectionId, chevronId) {
+  const sec = document.getElementById(sectionId);
+  const chv = document.getElementById(chevronId);
+  const collapsed = sec.style.display === 'none';
+  sec.style.display = collapsed ? '' : 'none';
+  chv.textContent   = collapsed ? '▲' : '▼';
+}
+
+// ── 최근 클릭 페이지네이션 ───────────────────────────────────
+let _clicks    = [];
+let _clickPage = 1;
+const CLICK_PER_PAGE = 20;
+
+async function loadClickHistory() {
+  const res  = await fetch('/api/recent-clicks');
+  _clicks    = await res.json();
+  _clickPage = 1;
+  renderClickPage();
+}
+
+function renderClickPage() {
+  const tbody = document.getElementById('click-history-body');
+  const empty = document.getElementById('click-empty');
+  const table = document.getElementById('click-table');
+  const pager = document.getElementById('click-pagination');
+
+  if (!_clicks.length) {
+    table.style.display = 'none';
+    pager.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+
+  const totalPages = Math.ceil(_clicks.length / CLICK_PER_PAGE);
+  const start = (_clickPage - 1) * CLICK_PER_PAGE;
+  const page  = _clicks.slice(start, start + CLICK_PER_PAGE);
+
+  tbody.innerHTML = page.map(c => `
+    <tr>
+      <td>
+        <a href="${escHtml(c.url)}" target="_blank" style="color:var(--primary);text-decoration:none;font-size:.85rem">
+          ${escHtml(c.title.length > 50 ? c.title.slice(0, 50) + '…' : c.title)}
+        </a>
+      </td>
+      <td><span class="badge" style="background:var(--surface2);color:var(--text-muted)">${escHtml(c.theme_name || c.theme_id)}</span></td>
+      <td style="color:var(--text-muted);font-size:.8rem">${escHtml(c.clicked_at.slice(0, 16))}</td>
+      <td>
+        <button onclick="deleteClick(this,'${escHtml(c.url)}')"
+          style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:1rem;padding:.2rem .4rem"
+          title="삭제">✕</button>
+      </td>
+    </tr>
+  `).join('');
+
+  table.style.display = 'table';
+  empty.style.display = 'none';
+
+  // 페이지네이션 버튼
+  if (totalPages <= 1) {
+    pager.style.display = 'none';
+    return;
+  }
+  pager.style.display = 'flex';
+
+  const btnStyle = (active) =>
+    `style="min-width:2rem;padding:.3rem .5rem;border:1px solid var(--border);border-radius:.4rem;
+     background:${active ? 'var(--primary)' : 'var(--surface)'};
+     color:${active ? '#fff' : 'var(--text)'};cursor:${active ? 'default' : 'pointer'};font-size:.85rem"`;
+
+  const btn = (label, page, disabled = false) =>
+    `<button ${btnStyle(page === _clickPage)} onclick="goClickPage(${page})" ${disabled ? 'disabled' : ''}>${label}</button>`;
+
+  let html = btn('&laquo;', 1, _clickPage === 1) + btn('&lsaquo;', _clickPage - 1, _clickPage === 1);
+
+  // 페이지 번호 (최대 5개)
+  const half = 2;
+  let lo = Math.max(1, _clickPage - half);
+  let hi = Math.min(totalPages, _clickPage + half);
+  if (lo === 1) hi = Math.min(totalPages, 5);
+  if (hi === totalPages) lo = Math.max(1, totalPages - 4);
+  for (let p = lo; p <= hi; p++) html += btn(p, p);
+
+  html += btn('&rsaquo;', _clickPage + 1, _clickPage === totalPages) + btn('&raquo;', totalPages, _clickPage === totalPages);
+  pager.innerHTML = html;
+}
+
+function goClickPage(page) {
+  const total = Math.ceil(_clicks.length / CLICK_PER_PAGE);
+  _clickPage = Math.max(1, Math.min(total, page));
+  renderClickPage();
+}
+
+async function deleteClick(btn, url) {
+  btn.disabled = true;
+  await fetch('/api/recent-clicks', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url }),
+  });
+  _clicks = _clicks.filter(c => c.url !== url);
+  // 현재 페이지가 비었으면 이전 페이지로
+  const total = Math.ceil(_clicks.length / CLICK_PER_PAGE);
+  if (_clickPage > total) _clickPage = Math.max(1, total);
+  renderClickPage();
+}
 
 const THEME_COLORS = ['#6366f1','#22c55e','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899'];
 const THEME_NAME_MAP = Object.fromEntries(
@@ -168,7 +276,7 @@ function renderArticles(articles) {
     <div class="article-card" id="ac-${btoa(a.url).replace(/[^a-z0-9]/gi,'').slice(0,16)}">
       <div class="article-card-header">
         <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
-          <span class="badge" style="background:var(--primary);color:#fff;font-size:.72rem">${escHtml(THEME_NAME_MAP[a.theme_id] || a.theme_id)}</span>
+          <span class="badge" style="background:var(--primary);color:#fff;font-size:.72rem">${escHtml(a.theme_name || THEME_NAME_MAP[a.theme_id] || a.theme_id)}</span>
           ${a.source ? `<span style="color:var(--text-muted);font-size:.78rem">${escHtml(a.source)}</span>` : ''}
           ${a.published ? `<span style="color:var(--text-muted);font-size:.75rem">🕐 ${escHtml(a.published)}</span>` : ''}
         </div>
@@ -333,7 +441,7 @@ function renderTrend(data) {
   data.forEach(d => { map[`${d.theme_id}|${d.date}`] = d.count; });
 
   const datasets = themes.map((tid, i) => ({
-    label: tid,
+    label: THEME_NAME_MAP[tid] || tid,
     data:  dates.map(dt => map[`${tid}|${dt}`] || 0),
     borderColor:     THEME_COLORS[i % THEME_COLORS.length],
     backgroundColor: THEME_COLORS[i % THEME_COLORS.length] + '22',
@@ -360,6 +468,6 @@ function renderTrend(data) {
 }
 
 // ── 초기화 ───────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => { loadArticles(); });
+document.addEventListener('DOMContentLoaded', () => { loadArticles(); loadClickHistory(); });
 </script>
 {% endblock %}

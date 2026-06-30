@@ -28,18 +28,25 @@ async def init_db():
         """)
         await db.execute("""
             CREATE TABLE IF NOT EXISTS saved_articles (
-                id        INTEGER PRIMARY KEY AUTOINCREMENT,
-                url       TEXT NOT NULL UNIQUE,
-                title     TEXT NOT NULL,
-                theme_id  TEXT NOT NULL,
-                source    TEXT DEFAULT '',
-                published TEXT DEFAULT '',
-                summary   TEXT DEFAULT '',
-                note      TEXT DEFAULT '',
-                status    TEXT DEFAULT 'unread',
-                saved_at  TEXT NOT NULL
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                url        TEXT NOT NULL UNIQUE,
+                title      TEXT NOT NULL,
+                theme_id   TEXT NOT NULL,
+                theme_name TEXT DEFAULT '',
+                source     TEXT DEFAULT '',
+                published  TEXT DEFAULT '',
+                summary    TEXT DEFAULT '',
+                note       TEXT DEFAULT '',
+                status     TEXT DEFAULT 'unread',
+                saved_at   TEXT NOT NULL
             )
         """)
+        # 기존 DB에 컬럼 없으면 추가 (마이그레이션)
+        try:
+            await db.execute("ALTER TABLE saved_articles ADD COLUMN theme_name TEXT DEFAULT ''")
+            await db.commit()
+        except Exception:
+            pass
         await db.commit()
 
 
@@ -64,13 +71,32 @@ async def get_interest_scores() -> dict[str, int]:
 
 
 async def get_recent_clicks(limit: int = 20) -> list[dict]:
+    """URL 기준 중복 제거 후 최근 클릭 반환."""
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         cursor = await db.execute(
-            "SELECT * FROM clicks ORDER BY clicked_at DESC LIMIT ?", (limit,)
+            """SELECT url, title, theme_id, MAX(clicked_at) as clicked_at
+               FROM clicks GROUP BY url ORDER BY clicked_at DESC LIMIT ?""",
+            (limit,)
         )
         rows = await cursor.fetchall()
     return [dict(r) for r in rows]
+
+
+async def delete_click(url: str):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("DELETE FROM clicks WHERE url=?", (url,))
+        await db.commit()
+
+
+async def get_theme_names_from_archive() -> dict[str, str]:
+    """아카이브에 저장된 theme_name 매핑 반환 (삭제된 테마 fallback용)."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute(
+            "SELECT DISTINCT theme_id, theme_name FROM saved_articles WHERE theme_name != ''"
+        )
+        rows = await cursor.fetchall()
+    return {r[0]: r[1] for r in rows}
 
 
 # ── 관심 없음 ─────────────────────────────────────────────────
@@ -100,16 +126,16 @@ async def get_disliked_urls() -> set[str]:
 # ── 저장 기사 아카이브 ────────────────────────────────────────
 
 async def save_article(
-    url: str, title: str, theme_id: str,
+    url: str, title: str, theme_id: str, theme_name: str = '',
     source: str = '', published: str = '', summary: str = '',
 ):
     """기사를 아카이브에 저장. 이미 있으면 무시."""
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
             """INSERT OR IGNORE INTO saved_articles
-               (url, title, theme_id, source, published, summary, saved_at)
-               VALUES (?,?,?,?,?,?,?)""",
-            (url, title, theme_id, source, published, summary[:500], datetime.now().isoformat()),
+               (url, title, theme_id, theme_name, source, published, summary, saved_at)
+               VALUES (?,?,?,?,?,?,?,?)""",
+            (url, title, theme_id, theme_name, source, published, summary[:500], datetime.now().isoformat()),
         )
         await db.commit()
 

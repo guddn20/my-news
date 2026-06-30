@@ -75,8 +75,9 @@
         </div>
       </div>
       <button class="dislike-btn {% if article.link in disliked_urls %}dislike-btn--active{% endif %}"
-        onclick="toggleDislike(this, '{{ article.link | e }}', '{{ article.title | e }}')" title="관심 없음">
-        {{ '🚫' if article.link in disliked_urls else '✕' }}
+        onclick="toggleDislike(this, '{{ article.link | e }}', '{{ article.title | e }}')"
+        title="관심 없음으로 표시하면 이후 추천에서 제외됩니다">
+        {{ '🚫 관심없음' if article.link in disliked_urls else '− 관심없음' }}
       </button>
     </div>
     {% endfor %}

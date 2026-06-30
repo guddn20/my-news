@@ -131,13 +131,21 @@ async def fetch_feed(client: httpx.AsyncClient, feed_info: dict, days: int = 1) 
                 if "<" in raw:
                     rss_body = BeautifulSoup(raw, "html.parser").get_text(" ", strip=True)[:1500]
 
-            pub_kst = pub.astimezone(KST)
+            pub_kst  = pub.astimezone(KST)
+            today    = datetime.now(KST).date()
+            pub_date = pub_kst.date()
+            if pub_date == today:
+                pub_label = f"오늘 {pub_kst.strftime('%H:%M')}"
+            elif pub_date == today - timedelta(days=1):
+                pub_label = f"어제 {pub_kst.strftime('%H:%M')}"
+            else:
+                pub_label = pub_kst.strftime("%m/%d %H:%M")
             articles.append({
                 "title":     entry.get("title", "제목 없음").strip(),
                 "summary":   entry.get("summary", "")[:300].strip(),
-                "body":      rss_body,   # 본문 (크롤링 전 RSS 본문)
+                "body":      rss_body,
                 "link":      entry.get("link", ""),
-                "published": pub_kst.strftime("%m/%d %H:%M"),
+                "published": pub_label,
                 "source":    feed_info["name"],
             })
     return articles, None

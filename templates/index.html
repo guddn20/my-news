@@ -3,7 +3,21 @@
 
 {% block content %}
 <h1>대시보드</h1>
-<p class="subtitle">AI 일일 뉴스 브리핑 현황</p>
+<p class="subtitle">브리핑 실행 · 상태 확인 · 로그 — 읽기는 <a href="/briefing" style="color:var(--primary)">브리핑 탭</a>에서</p>
+
+<!-- 온보딩: 처음 사용자 안내 -->
+{% if not has_themes %}
+<div class="today-banner" style="background:#6366f122;border-color:#6366f1;flex-direction:column;align-items:flex-start;gap:.5rem">
+  <div style="font-weight:600;color:#a5b4fc">👋 처음 오셨군요! 시작 전에 테마 설정이 필요합니다.</div>
+  <div style="font-size:.85rem;color:var(--text-muted)">어떤 주제의 뉴스를 받고 싶은지 테마를 먼저 만들어 주세요.</div>
+  <a href="/settings" onclick="setTimeout(()=>document.querySelector('[onclick*=themes]')?.click(),300)" class="btn btn-primary btn-sm" style="margin-top:.25rem">⚙️ 테마 설정하러 가기 →</a>
+</div>
+{% elif not has_email and not logs %}
+<div class="today-banner" style="background:#f59e0b15;border-color:#f59e0b;gap:.75rem">
+  <span style="color:#fbbf24">📧</span>
+  <div style="flex:1;font-size:.875rem">이메일 수신자가 설정되지 않았습니다. 브리핑을 메일로 받으려면 <a href="/settings" style="color:#fbbf24">이메일 설정</a>을 완료하세요.</div>
+</div>
+{% endif %}
 
 <!-- 오늘 실행 여부 배너 -->
 {% if today_run %}

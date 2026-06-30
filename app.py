@@ -190,6 +190,8 @@ async def dashboard(request: Request):
         "next_run":      scheduler.get_next_run(),
         "schedule_time": cfg.get("schedule_time", "07:00"),
         "today_run":     today_run,
+        "has_themes":    bool(cfg.get("themes")),
+        "has_email":     bool(cfg.get("newsletter", {}).get("recipients")),
     })
 
 
@@ -224,7 +226,11 @@ async def settings_view(request: Request):
 async def wiki_view(request: Request):
     cfg       = load_config()
     wiki_list = await wiki.get_wiki_list(cfg.get("obsidian_vault_path", ""))
-    recent    = await tracker.get_recent_clicks(10)
+    recent        = await tracker.get_recent_clicks(20)
+    archive_names = await tracker.get_theme_names_from_archive()
+    theme_names   = {**archive_names, **{t["id"]: t["name"] for t in cfg["themes"]}}
+    for c in recent:
+        c["theme_name"] = theme_names.get(c["theme_id"], c["theme_id"])
     return templates.TemplateResponse("wiki.html", {
         "request":       request,
         "wiki_list":     wiki_list,
@@ -332,7 +338,7 @@ async def track_click(request: Request):
 
     # 아카이브에 저장
     await tracker.save_article(
-        url, title, theme_id,
+        url, title, theme_id, theme_name,
         source=article.get("source", ""),
         published=article.get("published", ""),
         summary=article.get("summary", ""),
@@ -406,9 +412,10 @@ async def redirect_tracking(request: Request):
 
 @app.get("/api/interests")
 async def api_interests():
-    cfg         = load_config()
-    scores      = await tracker.get_interest_scores()
-    theme_names = {t["id"]: t["name"] for t in cfg["themes"]}
+    cfg          = load_config()
+    scores       = await tracker.get_interest_scores()
+    archive_names = await tracker.get_theme_names_from_archive()
+    theme_names  = {**archive_names, **{t["id"]: t["name"] for t in cfg["themes"]}}
     return [
         {"theme_id": tid, "theme_name": theme_names.get(tid, tid), "count": cnt}
         for tid, cnt in scores.items()
@@ -417,7 +424,16 @@ async def api_interests():
 
 @app.get("/api/recent-clicks")
 async def api_recent_clicks():
-    return await tracker.get_recent_clicks(20)
+    return await tracker.get_recent_clicks(200)
+
+
+@app.delete("/api/recent-clicks")
+async def delete_click(request: Request):
+    body = await request.json()
+    url  = body.get("url", "")
+    if url:
+        await tracker.delete_click(url)
+    return JSONResponse({"ok": True})
 
 
 # ── 설정 API ──────────────────────────────────────────────────

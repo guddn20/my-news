@@ -12,7 +12,12 @@
     <button class="snav-btn snav-btn--active" onclick="switchSettingsTab('general',this)">⚙️ 기본 설정</button>
     <button class="snav-btn" onclick="switchSettingsTab('themes',this)">🏷️ 테마 / 피드</button>
     <button class="snav-btn" onclick="switchSettingsTab('keywords',this)">🔍 키워드 필터</button>
-    <button class="snav-btn" onclick="switchSettingsTab('email',this)">📧 이메일</button>
+    <button class="snav-btn" onclick="switchSettingsTab('email',this)" id="email-tab-btn">
+      📧 이메일
+      {% if not config.newsletter or not config.newsletter.recipients %}
+      <span style="background:#ef4444;color:#fff;font-size:.65rem;padding:.1rem .35rem;border-radius:9999px;margin-left:.3rem;vertical-align:middle">미설정</span>
+      {% endif %}
+    </button>
   </div>
 
   <!-- 콘텐츠 영역 -->

@@ -45,45 +45,6 @@
       ]
     },
     {
-      "id": "___1782704689869",
-      "name": "농구",
-      "feeds": [
-        {
-          "name": "스포츠경향",
-          "url": "https://sports.khan.co.kr/rss/basketball"
-        },
-        {
-          "name": "동아",
-          "url": "https://rss.donga.com/sportsdonga/sports.xml"
-        },
-        {
-          "name": "연합뉴스",
-          "url": "https://www.yna.co.kr/rss/sports.xml"
-        },
-        {
-          "name": "OSEN",
-          "url": "https://osen.mt.co.kr/rss/news.xml"
-        },
-        {
-          "name": "스포츠조선",
-          "url": "https://sports.chosun.com/rss/sports_all.xml"
-        },
-        {
-          "name": "구글뉴스 스포츠",
-          "url": "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRFp1ZEdvU0FtdHZHZ0pMVWlnQVAB?hl=ko&gl=KR&ceid=KR:ko"
-        },
-        {
-          "name": "cbc",
-          "url": "https://www.cbc.ca/webfeed/rss/rss-sports-nba"
-        }
-      ],
-      "keywords": [
-        "농구",
-        "NBA",
-        "KBL"
-      ]
-    },
-    {
       "id": "___1782786433251",
       "name": "증권",
       "feeds": [
@@ -120,13 +81,8 @@
   ],
   "newsletter": {
     "enabled": true,
-    "recipients": [
-      {
-        "name": "조형우",
-        "email": "anglex@naver.com"
-      }
-    ]
+    "recipients": []
   },
   "collect_days": 2,
-  "summary_length": "short"
+  "summary_length": "medium"
 }
