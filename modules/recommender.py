@@ -36,6 +36,7 @@ def get_top_articles(
         for article in articles[:2]:
             recommendations.append({
                 **article,
+                "theme_id":        theme_id,
                 "recommend_reason": theme_name,
                 "interest_score": score,
             })

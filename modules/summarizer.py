@@ -12,7 +12,7 @@ import os
 import asyncio
 import anthropic
 
-_LENGTH_TOKENS = {"short": 256, "medium": 512, "detailed": 900}
+_LENGTH_TOKENS = {"short": 400, "medium": 900, "detailed": 1600}
 _LENGTH_HINT = {
     "short":    "1~2줄로 핵심만 요약하세요.",
     "medium":   "2~3줄로 요약하세요. 주요 흐름과 핵심 내용 위주로 작성하세요.",

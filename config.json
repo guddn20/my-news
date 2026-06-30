@@ -1,45 +1,7 @@
 {
-  "schedule_time": "07:00",
+  "schedule_time": "12:45",
   "obsidian_vault_path": "C:\\Users\\user\\Desktop\\Obsidian\\Hobsidian",
   "themes": [
-    {
-      "id": "it",
-      "name": "IT/테크",
-      "feeds": [
-        {
-          "name": "ZDNet Korea",
-          "url": "https://www.zdnet.co.kr/rss/rss.xml"
-        },
-        {
-          "name": "연합뉴스",
-          "url": "https://www.yna.co.kr/rss/industry.xml"
-        },
-        {
-          "name": "전자신문",
-          "url": "https://www.etnews.com/etnews/rss/0000000000.xml"
-        },
-        {
-          "name": "IT동아",
-          "url": "https://it.donga.com/rss/rss.xml"
-        },
-        {
-          "name": "Bloter",
-          "url": "https://www.bloter.net/feed"
-        },
-        {
-          "name": "디지털데일리",
-          "url": "https://www.ddaily.co.kr/rss/allArticle.xml"
-        },
-        {
-          "name": "구글뉴스 IT",
-          "url": "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGRqTVhZU0FtdHZHZ0pMVWlnQVAB?hl=ko&gl=KR&ceid=KR:ko"
-        }
-      ],
-      "keywords": [
-        "AI",
-        "IT"
-      ]
-    },
     {
       "id": "economy",
       "name": "경제",
@@ -76,6 +38,10 @@
           "name": "구글뉴스 경제",
           "url": "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNREppTm1jU0FtdHZHZ0pMVWlnQVAB?hl=ko&gl=KR&ceid=KR:ko"
         }
+      ],
+      "keywords": [
+        "경제",
+        "금융"
       ]
     },
     {
@@ -95,10 +61,6 @@
           "url": "https://www.yna.co.kr/rss/sports.xml"
         },
         {
-          "name": "CBC",
-          "url": "http://rss.cbc.ca/lineup/sports-basketball.xml"
-        },
-        {
           "name": "OSEN",
           "url": "https://osen.mt.co.kr/rss/news.xml"
         },
@@ -109,18 +71,62 @@
         {
           "name": "구글뉴스 스포츠",
           "url": "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRFp1ZEdvU0FtdHZHZ0pMVWlnQVAB?hl=ko&gl=KR&ceid=KR:ko"
+        },
+        {
+          "name": "cbc",
+          "url": "https://www.cbc.ca/webfeed/rss/rss-sports-nba"
         }
       ],
       "keywords": [
         "농구",
-        "NBA"
+        "NBA",
+        "KBL"
+      ]
+    },
+    {
+      "id": "___1782786433251",
+      "name": "증권",
+      "feeds": [
+        {
+          "name": "한국경제",
+          "url": "https://www.hankyung.com/feed/all-news"
+        },
+        {
+          "name": "매일경제",
+          "url": "https://www.mk.co.kr/rss/40300001/"
+        },
+        {
+          "name": "머니투데이",
+          "url": "https://www.mt.co.kr/rss/news/invest_news_list.xml"
+        },
+        {
+          "name": "이데일리",
+          "url": "https://www.edaily.co.kr/rss/feed"
+        },
+        {
+          "name": "서울경제",
+          "url": "https://www.sedaily.com/RSSFeed/Economy"
+        },
+        {
+          "name": "구글뉴스 경제",
+          "url": "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNREppTm1jU0FtdHZHZ0pMVWlnQVAB?hl=ko&gl=KR&ceid=KR:ko"
+        }
+      ],
+      "keywords": [
+        "증권",
+        "주식"
       ]
     }
   ],
   "newsletter": {
     "enabled": true,
-    "recipients": []
+    "recipients": [
+      {
+        "name": "조형우",
+        "email": "anglex@naver.com"
+      }
+    ]
   },
   "collect_days": 2,
-  "summary_length": "medium"
+  "summary_length": "short"
 }

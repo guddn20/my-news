@@ -107,6 +107,7 @@ async def fetch_feed(client: httpx.AsyncClient, feed_info: dict, days: int = 1) 
         print(f"[collector] 피드 실패: {feed_info['name']} — {e}")
         return [], str(e)
 
+    KST = timezone(timedelta(hours=9))
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     articles = []
     for entry in parsed.entries:
@@ -130,12 +131,13 @@ async def fetch_feed(client: httpx.AsyncClient, feed_info: dict, days: int = 1) 
                 if "<" in raw:
                     rss_body = BeautifulSoup(raw, "html.parser").get_text(" ", strip=True)[:1500]
 
+            pub_kst = pub.astimezone(KST)
             articles.append({
                 "title":     entry.get("title", "제목 없음").strip(),
                 "summary":   entry.get("summary", "")[:300].strip(),
                 "body":      rss_body,   # 본문 (크롤링 전 RSS 본문)
                 "link":      entry.get("link", ""),
-                "published": pub.strftime("%m/%d %H:%M"),
+                "published": pub_kst.strftime("%m/%d %H:%M"),
                 "source":    feed_info["name"],
             })
     return articles, None

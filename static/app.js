@@ -88,7 +88,8 @@ async function runNow() {
       updateProgressUI({ running: false, step: 'error', label: data.error || '오류', pct: 0 });
       showResult(result, false, `❌ 오류: ${data.error || '알 수 없는 오류'}`);
     }
-    setTimeout(() => location.reload(), 2800);
+    // 결과 2.5초 노출 후 새로고침 (SSE/폴링과 중복 방지)
+    setTimeout(() => _triggerReload(''), 2500);
   } catch (e) {
     stopPolling();
     updateProgressUI({ running: false, step: 'idle', label: '', pct: 0 });
@@ -357,6 +358,39 @@ function showToast(msg, type = 'success') {
   el._t = setTimeout(() => { el.style.opacity = '0'; }, 2800);
 }
 
+// ── 자동 새로고침 — SSE + 폴링 fallback ──────────────────────
+let _reloading  = false;
+let _baseline   = undefined;
+let _autoTimer  = null;
+
+function _triggerReload() {
+  if (_reloading) return;
+  _reloading = true;
+  clearInterval(_autoTimer); _autoTimer = null;
+  showToast('✅ 브리핑이 완료되었습니다. 새로고침합니다…', 'success');
+  setTimeout(() => location.reload(), 1200);
+}
+
+async function _poll() {
+  if (_reloading) return;
+  try {
+    const data   = await fetch('/api/status').then(r => r.json());
+    const latest = data.recent_logs?.[0]?.executed_at ?? null;
+    if (_baseline === undefined) { _baseline = latest; return; }
+    if (latest !== _baseline)   { _triggerReload(); }
+  } catch (_) {}
+}
+
+function startAutoRefresh() {
+  if (_autoTimer) return;
+  _poll(); // 기준값 초기화
+  _autoTimer = setInterval(_poll, 30_000); // 30초마다 확인
+}
+
+function stopAutoRefresh() {
+  clearInterval(_autoTimer); _autoTimer = null;
+}
+
 // ── 페이지 초기화 ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   if (document.getElementById('theme-list')) {
@@ -369,4 +403,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const generalForm = document.getElementById('general-form');
   if (generalForm) generalForm.addEventListener('submit', saveGeneralSettings);
+
+  // 모든 페이지에서 자동 새로고침 활성화
+  startAutoRefresh();
 });

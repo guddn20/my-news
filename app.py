@@ -9,7 +9,7 @@ from urllib.parse import unquote
 import httpx
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Form
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -28,6 +28,10 @@ last_summaries: dict       = {}
 
 # 실시간 진행 상황
 _run_progress: dict = {"running": False, "step": "idle", "label": "", "pct": 0, "error": None}
+
+# SSE 구독자 (실행 완료 알림용)
+import asyncio
+_sse_subscribers: set[asyncio.Queue] = set()
 
 
 # ── 설정 ──────────────────────────────────────────────────────
@@ -94,7 +98,7 @@ async def run_briefing(overwrite_note: bool = False) -> dict:
         _set_progress("saving", "Obsidian에 저장 중…", 75)
         summaries_with_articles = {
             tid: data for tid, data in summaries.items()
-            if data.get("articles") and not tid.startswith("_")
+            if data.get("articles") and tid != "_headline"
         }
 
         last_summaries = summaries
@@ -142,6 +146,13 @@ async def run_briefing(overwrite_note: bool = False) -> dict:
     run_logs.insert(0, log)
     if len(run_logs) > 50:
         run_logs.pop()
+
+    # SSE 구독자에게 완료 이벤트 브로드캐스트
+    for q in list(_sse_subscribers):
+        try:
+            q.put_nowait(log["status"])
+        except Exception:
+            pass
     _save_cache()
     return log
 
@@ -189,7 +200,7 @@ async def briefing_view(request: Request):
     disliked        = await tracker.get_disliked_urls()
     recommendations = recommender.get_top_articles(last_summaries, scores)
     headline        = last_summaries.get("_headline", {}).get("headline", "")
-    visible         = {tid: d for tid, d in last_summaries.items() if not tid.startswith("_")}
+    visible         = {tid: d for tid, d in last_summaries.items() if tid != "_headline"}
     return templates.TemplateResponse("briefing.html", {
         "request":         request,
         "summaries":       visible,
@@ -218,6 +229,7 @@ async def wiki_view(request: Request):
         "request":       request,
         "wiki_list":     wiki_list,
         "recent_clicks": recent,
+        "themes":        cfg["themes"],
     })
 
 
@@ -255,6 +267,28 @@ async def api_send_email():
     return JSONResponse({"ok": result["failed"] == 0, **result})
 
 
+@app.get("/api/run-events")
+async def run_events(request: Request):
+    """SSE — 브리핑 실행 완료 시 'done' 이벤트 전송."""
+    q: asyncio.Queue = asyncio.Queue()
+    _sse_subscribers.add(q)
+    async def generate():
+        try:
+            yield "data: connected\n\n"
+            while True:
+                if await request.is_disconnected():
+                    break
+                try:
+                    status = await asyncio.wait_for(q.get(), timeout=25)
+                    yield f"data: {status}\n\n"
+                except asyncio.TimeoutError:
+                    yield ": ping\n\n"   # 연결 유지
+        finally:
+            _sse_subscribers.discard(q)
+    return StreamingResponse(generate(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
 @app.get("/api/status")
 async def api_status():
     cfg = load_config()
@@ -279,11 +313,20 @@ async def track_click(request: Request):
     theme_name = next((t["name"] for t in cfg["themes"] if t["id"] == theme_id), theme_id)
     article    = {"title": title, "link": url, "source": "", "summary": "", "published": ""}
 
-    if theme_id in last_summaries:
-        for a in last_summaries[theme_id].get("articles", []):
+    # theme_id가 있으면 해당 테마에서, 없으면 전체 테마에서 URL로 기사 탐색
+    search_themes = [last_summaries[theme_id]] if theme_id in last_summaries else last_summaries.values()
+    for theme_data in search_themes:
+        for a in theme_data.get("articles", []):
             if a.get("link") == url:
                 article = a
+                if not theme_id:
+                    theme_id = next(
+                        (tid for tid, d in last_summaries.items() if d is theme_data), theme_id
+                    )
                 break
+        else:
+            continue
+        break
 
     await wiki.add_to_wiki(vault, theme_name, article)
 
