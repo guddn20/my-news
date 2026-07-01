@@ -123,6 +123,13 @@ async def get_disliked_urls() -> set[str]:
     return {r[0] for r in rows}
 
 
+async def get_disliked_titles() -> list[str]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("SELECT title FROM dislikes")
+        rows = await cursor.fetchall()
+    return [r[0] for r in rows]
+
+
 # ── 저장 기사 아카이브 ────────────────────────────────────────
 
 async def save_article(

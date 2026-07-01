@@ -175,11 +175,31 @@ async def _enrich_bodies(client: httpx.AsyncClient, articles: list[dict], max_cr
 
 # ── 전체 수집 ──────────────────────────────────────────────────
 
-async def collect_all(themes: list[dict], days: int = 1) -> tuple[dict[str, list[dict]], dict[str, dict]]:
+def build_dislike_filter(disliked_titles: list[str]) -> set[str]:
+    """관심없음 제목에서 핵심 키워드 추출 → 필터용 집합 반환."""
+    kws: set[str] = set()
+    for title in disliked_titles:
+        kws |= _title_keywords(title)
+    return kws
+
+
+def _is_disliked(article: dict, dislike_kws: set[str], threshold: float = 0.5) -> bool:
+    """기사 제목이 관심없음 키워드와 threshold 이상 겹치면 True."""
+    if not dislike_kws:
+        return False
+    kw = _title_keywords(article["title"])
+    if not kw:
+        return False
+    return len(kw & dislike_kws) / len(kw) >= threshold
+
+
+async def collect_all(themes: list[dict], days: int = 1, disliked_titles: list[str] | None = None) -> tuple[dict[str, list[dict]], dict[str, dict]]:
     """
     모든 테마의 RSS 피드를 병렬 수집 → 중복 제거 → 본문 보강.
     반환: (results, diagnostics)
     """
+    dislike_kws = build_dislike_filter(disliked_titles or [])
+
     async with httpx.AsyncClient(headers={"User-Agent": "뉴스곳간/1.0"}, follow_redirects=True) as client:
         feed_tasks: list[tuple[str, list[str], str, Any]] = []
         for theme in themes:
@@ -222,6 +242,7 @@ async def collect_all(themes: list[dict], days: int = 1) -> tuple[dict[str, list
             d["duplicates_removed"] = d["total_fetched"] - len(deduped)
 
             filtered = [a for a in deduped if _matches_keywords(a, keywords)]
+            filtered = [a for a in filtered if not _is_disliked(a, dislike_kws)]
             d["after_filter"]  = len(filtered)
             d["filtered_out"]  = len(deduped) - len(filtered)
 

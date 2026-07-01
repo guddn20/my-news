@@ -80,8 +80,9 @@ async def run_briefing(overwrite_note: bool = False) -> dict:
 
     _set_progress("collecting", "RSS 피드 수집 중…", 10)
     try:
-        days = cfg.get("collect_days", 1)
-        articles_by_theme, diagnostics = await collector.collect_all(cfg["themes"], days=days)
+        days             = cfg.get("collect_days", 1)
+        disliked_titles  = await tracker.get_disliked_titles()
+        articles_by_theme, diagnostics = await collector.collect_all(cfg["themes"], days=days, disliked_titles=disliked_titles)
         total_articles = sum(len(v) for v in articles_by_theme.values())
 
         _set_progress("summarizing", "Claude AI 요약 중…", 45)
