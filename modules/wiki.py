@@ -7,7 +7,7 @@ import aiofiles
 import anthropic
 
 
-WIKI_DIR = "MyNews-Wiki"
+WIKI_DIR = "뉴스곳간-Wiki"
 
 
 def _wiki_path(vault_path: str, theme_name: str) -> Path:
@@ -64,7 +64,7 @@ async def add_to_wiki(
 
     # 파일이 없으면 헤더 포함해서 생성
     if not path.exists():
-        header = f"# {theme_name} 위키\n\n> My News 자동 생성 | 마지막 업데이트: {today}\n\n---\n"
+        header = f"# {theme_name} 위키\n\n> 뉴스곳간 자동 생성 | 마지막 업데이트: {today}\n\n---\n"
         async with aiofiles.open(path, "w", encoding="utf-8") as f:
             await f.write(header + entry)
     else:

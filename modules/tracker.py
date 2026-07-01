@@ -209,3 +209,6 @@ async def get_theme_trends(days: int = 30) -> list[dict]:
         )
         rows = await cursor.fetchall()
     return [{"date": r[0], "theme_id": r[1], "count": r[2]} for r in rows]
+
+
+# ── 관심 키워드 추출 ──────────────────────────────────────────

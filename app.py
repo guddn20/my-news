@@ -1,4 +1,4 @@
-"""My News — FastAPI 앱 진입점"""
+"""뉴스곳간 — FastAPI 앱 진입점"""
 import json
 import os
 from contextlib import asynccontextmanager
@@ -164,13 +164,18 @@ async def lifespan(app: FastAPI):
     _load_cache()
     await tracker.init_db()
     cfg = load_config()
-    scheduler.start(run_briefing, cfg.get("schedule_time", "07:00"))
+
+    async def _scheduled_run():
+        c = load_config()
+        await run_briefing(overwrite_note=c.get("auto_overwrite", False))
+
+    scheduler.start(_scheduled_run, cfg.get("schedule_time", "07:00"))
     yield
     if scheduler._scheduler.running:
         scheduler._scheduler.shutdown()
 
 
-app = FastAPI(title="My News", lifespan=lifespan)
+app = FastAPI(title="뉴스곳간", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
@@ -444,14 +449,20 @@ async def save_general_settings(
     obsidian_vault_path: str = Form(""),
     collect_days:       int = Form(1),
     summary_length:     str = Form("medium"),
+    auto_overwrite:     str = Form("off"),
 ):
     cfg = load_config()
     cfg["schedule_time"]       = schedule_time
     cfg["obsidian_vault_path"] = obsidian_vault_path
     cfg["collect_days"]        = collect_days
     cfg["summary_length"]      = summary_length
+    cfg["auto_overwrite"]      = (auto_overwrite == "on")
     save_config(cfg)
-    scheduler.update_schedule(run_briefing, schedule_time)
+    async def _scheduled_run():
+        c = load_config()
+        await run_briefing(overwrite_note=c.get("auto_overwrite", False))
+
+    scheduler.update_schedule(_scheduled_run, schedule_time)
     return JSONResponse({"ok": True})
 
 
@@ -512,7 +523,7 @@ async def detect_rss(url: str):
         "/rss/news.xml", "/rss/allArticle.xml", "/rss/rss.xml",
         "/arc/outboundfeeds/rss/", "/feeds/posts/default",
     ]
-    async with httpx.AsyncClient(headers={"User-Agent": "MyNews/1.0"}, follow_redirects=True) as client:
+    async with httpx.AsyncClient(headers={"User-Agent": "뉴스곳간/1.0"}, follow_redirects=True) as client:
         try:
             html = (await client.get(url, timeout=10.0)).text
             for pat in [
@@ -540,7 +551,7 @@ async def detect_rss(url: str):
 @app.get("/api/validate-feed")
 async def validate_feed(url: str):
     try:
-        async with httpx.AsyncClient(headers={"User-Agent": "MyNews/1.0"}, follow_redirects=True) as client:
+        async with httpx.AsyncClient(headers={"User-Agent": "뉴스곳간/1.0"}, follow_redirects=True) as client:
             r  = await client.get(url, timeout=8.0)
             ct = r.headers.get("content-type", "")
             ok = r.status_code == 200 and any(k in ct for k in ("xml", "rss", "atom", "text"))
@@ -577,7 +588,7 @@ async def test_smtp():
     try:
         use_ssl = smtp_port == 465
         probe   = _MIMEText("연결 테스트", "plain", "utf-8")
-        probe["Subject"] = "[My News] SMTP 연결 테스트"
+        probe["Subject"] = "[뉴스곳간] SMTP 연결 테스트"
         probe["From"]    = smtp_user
         probe["To"]      = smtp_user
         await aiosmtplib.send(probe, hostname=smtp_server, port=smtp_port,

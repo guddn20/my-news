@@ -45,7 +45,7 @@ async def send_newsletter(
 
     target    = target_date or date.today()
     html_body = _render_html(summaries, target, tracking_base=base_url)
-    subject   = f"📰 My News 브리핑 — {target.strftime('%Y/%m/%d')}"
+    subject   = f"📰 뉴스곳간 브리핑 — {target.strftime('%Y/%m/%d')}"
 
     sent, failed, errors = 0, 0, []
     for r in recipients:

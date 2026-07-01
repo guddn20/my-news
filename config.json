@@ -1,5 +1,5 @@
 {
-  "schedule_time": "12:45",
+  "schedule_time": "09:14",
   "obsidian_vault_path": "C:\\Users\\user\\Desktop\\Obsidian\\Hobsidian",
   "themes": [
     {
@@ -35,8 +35,12 @@
           "url": "https://www.sedaily.com/RSSFeed/Economy"
         },
         {
-          "name": "구글뉴스 경제",
-          "url": "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNREppTm1jU0FtdHZHZ0pMVWlnQVAB?hl=ko&gl=KR&ceid=KR:ko"
+          "name": "네이버뉴스 경제",
+          "url": "https://news.naver.com/rss/economics.xml"
+        },
+        {
+          "name": "연합인포맥스",
+          "url": "https://news.einfomax.co.kr/rss/allArticle.xml"
         }
       ],
       "keywords": [
@@ -69,13 +73,71 @@
           "url": "https://www.sedaily.com/RSSFeed/Economy"
         },
         {
-          "name": "구글뉴스 경제",
-          "url": "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNREppTm1jU0FtdHZHZ0pMVWlnQVAB?hl=ko&gl=KR&ceid=KR:ko"
+          "name": "네이버뉴스 경제",
+          "url": "https://news.naver.com/rss/economics.xml"
+        },
+        {
+          "name": "연합인포맥스",
+          "url": "https://news.einfomax.co.kr/rss/allArticle.xml"
         }
       ],
       "keywords": [
         "증권",
         "주식"
+      ]
+    },
+    {
+      "id": "____1782867925264",
+      "name": "부동산",
+      "feeds": [
+        {
+          "name": "부동산114",
+          "url": "https://www.r114.com/rss/news.xml"
+        },
+        {
+          "name": "구글뉴스 부동산",
+          "url": "https://news.google.com/rss/search?q=부동산&hl=ko&gl=KR&ceid=KR:ko"
+        },
+        {
+          "name": "한국경제 부동산",
+          "url": "https://www.hankyung.com/feed/realestate"
+        }
+      ]
+    },
+    {
+      "id": "____1782867981498",
+      "name": "자동차",
+      "feeds": [
+        {
+          "name": "구글뉴스 자동차",
+          "url": "https://news.google.com/rss/search?q=자동차&hl=ko&gl=KR&ceid=KR:ko"
+        },
+        {
+          "name": "오토타임즈",
+          "url": "https://www.autotimes.co.kr/rss/rss.xml"
+        },
+        {
+          "name": "카가이",
+          "url": "https://www.carguy.kr/rss"
+        }
+      ]
+    },
+    {
+      "id": "___1782867989801",
+      "name": "게임",
+      "feeds": [
+        {
+          "name": "인벤",
+          "url": "https://www.inven.co.kr/common/rss.php"
+        },
+        {
+          "name": "게임메카",
+          "url": "https://www.gamemeca.com/rss.php"
+        },
+        {
+          "name": "구글뉴스 게임",
+          "url": "https://news.google.com/rss/search?q=게임&hl=ko&gl=KR&ceid=KR:ko"
+        }
       ]
     }
   ],

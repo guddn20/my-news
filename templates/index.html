@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}대시보드 — My News{% endblock %}
+{% block title %}대시보드 — 뉴스곳간{% endblock %}
 
 {% block content %}
 <h1>대시보드</h1>
@@ -151,6 +151,13 @@
 {% block scripts %}
 <script>
 document.querySelector('.nav-links a[href="/"]')?.classList.add('active');
+
+function runOverwrite() {
+  // 덮어쓰기 체크박스를 강제로 체크한 뒤 runNow() 호출
+  const chk = document.getElementById('overwrite-check');
+  if (chk) chk.checked = true;
+  runNow();
+}
 
 // 진행 단계 → step ID 매핑
 const STEP_ORDER = ['collecting','summarizing','saving','emailing','done'];

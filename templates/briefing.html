@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}브리핑 — My News{% endblock %}
+{% block title %}브리핑 — 뉴스곳간{% endblock %}
 
 {% block content %}
 <h1>오늘의 브리핑</h1>
@@ -76,7 +76,7 @@
       </div>
       <button class="dislike-btn {% if article.link in disliked_urls %}dislike-btn--active{% endif %}"
         onclick="toggleDislike(this, '{{ article.link | e }}', '{{ article.title | e }}')"
-        title="관심 없음으로 표시하면 이후 추천에서 제외됩니다">
+        title="관심없음으로 표시하면 이후 추천에서 제외됩니다">
         {{ '🚫 관심없음' if article.link in disliked_urls else '− 관심없음' }}
       </button>
     </div>
@@ -155,15 +155,14 @@
       row.dataset.disliked = 'false';
       row.classList.remove('article-row--disliked');
       btn.classList.remove('dislike-btn--active');
-      btn.textContent = '✕';
-      btn.title = '관심 없음';
+      btn.textContent = '− 관심없음';
     } else {
       row.dataset.disliked = 'true';
       row.classList.add('article-row--disliked');
       btn.classList.add('dislike-btn--active');
-      btn.textContent = '🚫';
-      btn.title = '관심 없음 취소';
+      btn.textContent = '🚫 관심없음';
     }
   }
+
 </script>
 {% endblock %}

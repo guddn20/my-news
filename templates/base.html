@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}My News{% endblock %}</title>
+  <title>{% block title %}뉴스곳간{% endblock %}</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 <nav>
-  <a class="nav-logo" href="/">📰 My News</a>
+  <a class="nav-logo" href="/">📰 뉴스곳간</a>
   <div class="nav-links">
     <a href="/" {% if active == 'dashboard' %}class="active"{% endif %}>대시보드</a>
     <a href="/briefing" {% if active == 'briefing' %}class="active"{% endif %}>브리핑</a>

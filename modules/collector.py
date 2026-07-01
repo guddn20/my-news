@@ -52,37 +52,47 @@ async def fetch_article_body(client: httpx.AsyncClient, url: str) -> str:
 
 # ── 중복 제거 ──────────────────────────────────────────────────
 
-def _normalize_title(title: str) -> str:
-    """비교용 제목 정규화: 소문자, 특수문자 제거."""
-    return re.sub(r"[^\w가-힣]", "", title.lower())
+# 비교에서 제외할 한국어 불용어
+_STOPWORDS = {
+    "이", "그", "저", "것", "수", "등", "를", "을", "이", "가", "은", "는",
+    "에", "의", "로", "와", "과", "도", "만", "에서", "으로", "라고", "라며",
+    "했다", "한다", "있다", "없다", "했으며", "위해", "대해", "통해", "따라",
+    "대한", "관련", "오는", "지난", "올해", "내년", "지난해", "최근", "현재",
+}
+
+def _title_keywords(title: str) -> set[str]:
+    """제목을 공백 기준으로 분리해 의미 있는 단어만 추출."""
+    words = re.sub(r"[^\w가-힣\s]", " ", title).split()
+    return {w for w in words if len(w) >= 2 and w not in _STOPWORDS}
 
 
-def _is_duplicate(article: dict, seen_urls: set[str], seen_titles: list[str]) -> bool:
+def _is_duplicate(article: dict, seen_urls: set[str], seen_kw: list[set[str]]) -> bool:
     url = article["link"]
     if url and url in seen_urls:
         return True
-    norm = _normalize_title(article["title"])
-    if not norm:
+    kw = _title_keywords(article["title"])
+    if not kw:
         return False
-    # 이미 수집한 제목과 70% 이상 겹치면 중복
-    for t in seen_titles:
-        overlap = len(set(norm) & set(t)) / max(len(norm), len(t), 1)
-        if overlap >= 0.70:
+    for seen in seen_kw:
+        if not seen:
+            continue
+        overlap = len(kw & seen) / min(len(kw), len(seen))
+        if overlap >= 0.6:   # 핵심어 60% 이상 겹치면 중복
             return True
     return False
 
 
 def _deduplicate(articles: list[dict]) -> list[dict]:
-    seen_urls:   set[str]  = set()
-    seen_titles: list[str] = []
+    seen_urls: set[str]       = set()
+    seen_kw:   list[set[str]] = []
     result: list[dict] = []
     for a in articles:
-        if _is_duplicate(a, seen_urls, seen_titles):
+        if _is_duplicate(a, seen_urls, seen_kw):
             continue
         result.append(a)
         if a["link"]:
             seen_urls.add(a["link"])
-        seen_titles.append(_normalize_title(a["title"]))
+        seen_kw.append(_title_keywords(a["title"]))
     return result
 
 
@@ -170,7 +180,7 @@ async def collect_all(themes: list[dict], days: int = 1) -> tuple[dict[str, list
     모든 테마의 RSS 피드를 병렬 수집 → 중복 제거 → 본문 보강.
     반환: (results, diagnostics)
     """
-    async with httpx.AsyncClient(headers={"User-Agent": "MyNews/1.0"}, follow_redirects=True) as client:
+    async with httpx.AsyncClient(headers={"User-Agent": "뉴스곳간/1.0"}, follow_redirects=True) as client:
         feed_tasks: list[tuple[str, list[str], str, Any]] = []
         for theme in themes:
             keywords = theme.get("keywords", [])

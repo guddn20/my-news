@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}설정 — My News{% endblock %}
+{% block title %}설정 — 뉴스곳간{% endblock %}
 
 {% block content %}
 <h1>설정</h1>
@@ -69,6 +69,15 @@
               <span class="radio-desc">트렌드·맥락 포함</span>
             </label>
           </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">자동 실행 시 Obsidian 덮어쓰기</label>
+          <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;font-size:.9rem">
+            <input type="checkbox" name="auto_overwrite" style="width:auto"
+              {% if config.auto_overwrite %}checked{% endif %}>
+            예약 실행 시 기존 브리핑 노트를 자동으로 덮어씁니다
+          </label>
+          <p class="form-hint">체크 해제 시 기존 노트가 있어도 덮어쓰지 않습니다. 대시보드에서 수동으로 덮어쓸 수 있습니다.</p>
         </div>
         <button type="submit" class="btn btn-primary">저장</button>
       </form>
