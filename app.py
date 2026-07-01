@@ -206,6 +206,7 @@ async def briefing_view(request: Request):
     cfg             = load_config()
     scores          = await tracker.get_interest_scores()
     disliked        = await tracker.get_disliked_urls()
+    clicked         = await tracker.get_clicked_urls()
     recommendations = recommender.get_top_articles(last_summaries, scores)
     headline        = last_summaries.get("_headline", {}).get("headline", "")
     visible         = {tid: d for tid, d in last_summaries.items() if tid != "_headline"}
@@ -215,6 +216,7 @@ async def briefing_view(request: Request):
         "themes":          cfg["themes"],
         "recommendations": recommendations,
         "disliked_urls":   list(disliked),
+        "clicked_urls":    list(clicked),
         "headline":        headline,
     })
 

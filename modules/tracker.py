@@ -70,6 +70,14 @@ async def get_interest_scores() -> dict[str, int]:
     return {row[0]: row[1] for row in rows}
 
 
+async def get_clicked_urls() -> set[str]:
+    """클릭한 적 있는 URL 전체 반환 (브리핑 읽음 표시용)."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("SELECT DISTINCT url FROM clicks")
+        rows = await cursor.fetchall()
+    return {r[0] for r in rows}
+
+
 async def get_recent_clicks(limit: int = 20) -> list[dict]:
     """URL 기준 중복 제거 후 최근 클릭 반환."""
     async with aiosqlite.connect(DB_PATH) as db:

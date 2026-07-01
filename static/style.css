@@ -602,6 +602,21 @@ tr:last-child td {
   opacity: 0.35;
 }
 
+.article-row--read .article-link {
+  color: var(--text-muted);
+}
+
+.read-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  background: var(--surface2);
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+
 .article-row-main {
   flex: 1;
   min-width: 0;

@@ -59,7 +59,9 @@
   <div class="briefing-articles">
     <div class="briefing-articles-label">수집 기사</div>
     {% for article in data.articles %}
-    <div class="article-row" id="ar-{{ loop.index }}-{{ theme_id }}" data-url="{{ article.link }}"
+    {% set already_read = article.link in clicked_urls %}
+    <div class="article-row{% if already_read %} article-row--read{% endif %}"
+      id="ar-{{ loop.index }}-{{ theme_id }}" data-url="{{ article.link }}"
       data-disliked="{{ 'true' if article.link in disliked_urls else 'false' }}">
       <div class="article-row-main">
         <a class="article-link" href="{{ article.link }}" target="_blank" rel="noopener"
@@ -67,6 +69,7 @@
           onclick="trackClick(this)">
           ↗ {{ article.title }}
         </a>
+        {% if already_read %}<span class="read-badge">읽음</span>{% endif %}
         <div class="article-meta-row">
           <span class="article-source">{{ article.source }}</span>
           {% if article.published %}
