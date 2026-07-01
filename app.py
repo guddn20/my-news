@@ -526,7 +526,7 @@ async def detect_rss(url: str):
         "/rss/news.xml", "/rss/allArticle.xml", "/rss/rss.xml",
         "/arc/outboundfeeds/rss/", "/feeds/posts/default",
     ]
-    async with httpx.AsyncClient(headers={"User-Agent": "뉴스곳간/1.0"}, follow_redirects=True) as client:
+    async with httpx.AsyncClient(headers={"User-Agent": "NewsCellar/1.0"}, follow_redirects=True) as client:
         try:
             html = (await client.get(url, timeout=10.0)).text
             for pat in [
@@ -554,7 +554,7 @@ async def detect_rss(url: str):
 @app.get("/api/validate-feed")
 async def validate_feed(url: str):
     try:
-        async with httpx.AsyncClient(headers={"User-Agent": "뉴스곳간/1.0"}, follow_redirects=True) as client:
+        async with httpx.AsyncClient(headers={"User-Agent": "NewsCellar/1.0"}, follow_redirects=True) as client:
             r  = await client.get(url, timeout=8.0)
             ct = r.headers.get("content-type", "")
             ok = r.status_code == 200 and any(k in ct for k in ("xml", "rss", "atom", "text"))

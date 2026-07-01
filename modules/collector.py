@@ -200,7 +200,7 @@ async def collect_all(themes: list[dict], days: int = 1, disliked_titles: list[s
     """
     dislike_kws = build_dislike_filter(disliked_titles or [])
 
-    async with httpx.AsyncClient(headers={"User-Agent": "뉴스곳간/1.0"}, follow_redirects=True) as client:
+    async with httpx.AsyncClient(headers={"User-Agent": "NewsCellar/1.0"}, follow_redirects=True) as client:
         feed_tasks: list[tuple[str, list[str], str, Any]] = []
         for theme in themes:
             keywords = theme.get("keywords", [])
